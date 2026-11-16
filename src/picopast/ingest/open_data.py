@@ -89,6 +89,33 @@ def _oisst_opendap(cfg: Config, year: int) -> xr.DataArray:
     )
 
 
+def _download_resumable(url: str, local: Path, attempts: int = 6) -> None:
+    """Stream ``url`` to ``local``, resuming with an HTTP Range request after a dropped connection.
+
+    NOAA PSL often cuts long transfers partway through a 0.5 GB file. If the
+    server ignores the Range header (answers 200, not 206), the file restarts.
+    """
+    local.unlink(missing_ok=True)
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        have = local.stat().st_size if local.exists() else 0
+        headers = {"Range": f"bytes={have}-"} if have else {}
+        try:
+            with requests.get(url, stream=True, timeout=(15, 120), headers=headers) as r:
+                if r.status_code == 416:  # requested range starts at the end: already complete
+                    return
+                r.raise_for_status()
+                mode = "ab" if have and r.status_code == 206 else "wb"
+                with open(local, mode) as f:
+                    for chunk in r.iter_content(chunk_size=2**22):
+                        f.write(chunk)
+            return
+        except requests.RequestException as e:
+            last_error = e
+            time.sleep(10 * (attempt + 1))
+    raise RuntimeError(f"download failed after {attempts} attempts: {url}") from last_error
+
+
 def _oisst_file(cfg: Config, year: int) -> xr.DataArray:
     """Download the whole global yearly file (about 0.5 GB), cut the box, delete the file."""
     box = cfg.box
@@ -97,11 +124,7 @@ def _oisst_file(cfg: Config, year: int) -> xr.DataArray:
     cache.mkdir(parents=True, exist_ok=True)
     local = cache / f"oisst_global_{year}.nc"
     try:
-        with requests.get(url, stream=True, timeout=(15, 120)) as r:
-            r.raise_for_status()
-            with open(local, "wb") as f:
-                for chunk in r.iter_content(chunk_size=2**22):
-                    f.write(chunk)
+        _download_resumable(url, local)
         with xr.open_dataset(local) as ds:
             sub = ds["sst"].sel(
                 lat=slice(box.lat_min, box.lat_max), lon=slice(box.lon_min, box.lon_max)

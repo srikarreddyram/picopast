@@ -115,6 +115,23 @@ Updated 16 November 2026 (week 2). Ordered by how soon each one blocks work.
     `mask` flag (1 = water, 2 = land), not SST gaps. `cmc_sst` downloads now
     keep `mask`.
 
+17. **Checks A and B: results (16 November, run once under the fixed rule).**
+    See `docs/reports/trust_gate_fallback.md`.
+    - **A (Prochlorococcus vs HPLC DVChl a): not supported** under both
+      mappings. Only 12 of 27 station-days matched; the other 15 had fewer
+      than 5 cloud-free pixels on all three allowed days (checked one by one).
+      ρ = −0.05 (operational) and −0.34 (ATBD), with intervals spanning about
+      −0.7 to +0.6. Read with care: this is a low-power test, not evidence
+      that MOANA is wrong. DVChl a ranged only 0.023–0.054 mg m⁻³ on the
+      cruise, and the matches come from one cruise in one season. Two
+      station-days (8–9 May, 2.8°N 83.3°E) share a pixel and a satellite
+      value. By the pre-registered rule, Prochlorococcus is **not
+      reconstructed**.
+    - **B (Synechococcus vs phycoerythrin, exploratory): no relationship**,
+      ρ ≈ 0 over 692 pixel-days, under both mappings.
+    - **C** waits for the 8-day MOANA maps (needs the PACE 8-day download and
+      full-era CMC SST).
+
 ## Not started (by design)
 
 - Zarr cube builder: waits for the first real PACE and VIIRS files so it is

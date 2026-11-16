@@ -49,27 +49,43 @@ products:
   viirs_snpp_rrs:
     short_name: VIIRSN_L3m_RRS
     name_pattern: "SNPP_VIIRS.*.L3m.{period}.RRS.Rrs_*.4km.nc"
+    variables: from_name
+    box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
   viirs_snpp_chl:
     short_name: VIIRSN_L3m_CHL
     name_pattern: "SNPP_VIIRS.*.L3m.{period}.CHL.chlor_a.4km.nc"
+    variables: from_name
+    box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
   viirs_snpp_kd:
     short_name: VIIRSN_L3m_KD
     name_pattern: "SNPP_VIIRS.*.L3m.{period}.KD.Kd_490.4km.nc"
+    variables: from_name
+    box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
   viirs_snpp_par:
     short_name: VIIRSN_L3m_PAR
     name_pattern: "SNPP_VIIRS.*.L3m.{period}.PAR.par.4km.nc"
+    variables: from_name
+    box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
   viirs_noaa20_rrs:
     short_name: VIIRSJ1_L3m_RRS
     name_pattern: "JPSS1_VIIRS.*.L3m.{period}.RRS.Rrs_*.4km.nc"
+    variables: from_name
+    box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
   viirs_noaa20_chl:
     short_name: VIIRSJ1_L3m_CHL
     name_pattern: "JPSS1_VIIRS.*.L3m.{period}.CHL.chlor_a.4km.nc"
+    variables: from_name
+    box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
   viirs_noaa20_kd:
     short_name: VIIRSJ1_L3m_KD
     name_pattern: "JPSS1_VIIRS.*.L3m.{period}.KD.Kd_490.4km.nc"
+    variables: from_name
+    box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
   viirs_noaa20_par:
     short_name: VIIRSJ1_L3m_PAR
     name_pattern: "JPSS1_VIIRS.*.L3m.{period}.PAR.par.4km.nc"
+    variables: from_name
+    box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
   cmc_sst:                                # MOANA's SST input in the PACE era
     short_name: CMC0.1deg-CMC-L4-GLOB-v3.0
     name_pattern: "*"
@@ -113,6 +129,18 @@ trust_gate:
     inconsistent_ci_high: 0.30  # upper end below -> pattern not consistent
   n_bootstrap: 2000
 
+# Back-extension to 2012 (picopast.reconstruct). Every group is reconstructed, but each
+# output carries its trust-gate tier; only a group that passed is used for headline results.
+# Tiers follow docs/reports/trust_gate_fallback.md (operational mapping, 16 Nov 2026).
+reconstruction:
+  sensor: snpp
+  mapping: operational
+  per_period_sample: 10000     # training pixels sampled per PACE-era 8-day period
+  tiers:
+    peuk: "relative index: passed the trust gate (check C pattern consistent)"
+    syn: "exploratory: did not pass the trust gate (check C inconclusive)"
+    pro: "exploratory: did not pass the trust gate (check A not supported; check C inconclusive)"
+
 paths:
   data: data
   raw: data/raw
@@ -120,3 +148,4 @@ paths:
   cube: data/cube
   insitu: data/insitu
   reports: docs/reports
+  products: data/products

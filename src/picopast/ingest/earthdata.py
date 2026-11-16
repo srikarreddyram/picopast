@@ -12,6 +12,7 @@ range requests.
 
 from __future__ import annotations
 
+import os
 import tempfile
 import zlib
 from pathlib import Path
@@ -310,6 +311,19 @@ def read_box_chunked(fs, url: str, variables: list[str], region: Box, max_gap: i
     return xr.decode_cf(ds)
 
 
+def granule_variables(spec: dict, name: str) -> list[str] | None:
+    """The variables to keep from one granule.
+
+    ``variables: from_name`` means the one variable named in the file name, as in
+    NASA's single-variable L3m files: ``SNPP_VIIRS.<dates>.L3m.8D.RRS.Rrs_443.4km.nc``
+    holds ``Rrs_443``; ``....PAR.par.4km.nc`` holds ``par``.
+    """
+    v = spec.get("variables")
+    if v == "from_name":
+        return [name.split(".4km")[0].rsplit(".", 1)[1]]
+    return v
+
+
 def fetch(
     cfg: Config,
     product: str,
@@ -344,20 +358,24 @@ def fetch(
         if out.exists():
             written.append(out)
             continue
+        part = out.with_name(f"{out.name}.{os.getpid()}.part")  # renamed only when complete
+        variables = granule_variables(spec, g.name)
+        chunked = spec.get("box_read") == "chunked" or g.size_mb > REMOTE_READ_ABOVE_MB
         if not box:
-            fs.get(g.url, str(out))
-        elif g.size_mb > REMOTE_READ_ABOVE_MB and spec.get("variables"):
-            _write_netcdf(read_box_chunked(fs, g.url, spec["variables"], region), out)
+            fs.get(g.url, str(part))
+        elif chunked and variables:
+            _write_netcdf(read_box_chunked(fs, g.url, variables, region), part)
         elif g.size_mb > REMOTE_READ_ABOVE_MB:
             with fs.open(g.url, block_size=4 * 2**20) as f, xr.open_dataset(
                 f, engine="h5netcdf"
             ) as ds:
-                _write_subset(ds, region, spec.get("variables"), out)
+                _write_subset(ds, region, variables, part)
         else:
             with tempfile.TemporaryDirectory() as tmp:
                 local = Path(tmp) / "granule.nc"
                 fs.get(g.url, str(local))
                 with xr.open_dataset(local) as ds:
-                    _write_subset(ds, region, spec.get("variables"), out)
+                    _write_subset(ds, region, variables, part)
+        part.rename(out)
         written.append(out)
     return written

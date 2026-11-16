@@ -102,6 +102,14 @@ def _fallback_checks(args):
     print(out.read_text())
 
 
+def _reconstruct(args):
+    from picopast import reconstruct_run
+
+    stages = ("table", "validate", "apply", "report") if args.stage == "all" else (args.stage,)
+    out = reconstruct_run.run(load_config(args.config), stages=stages, refresh=args.refresh)
+    print(out.read_text())
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="picopast", description=__doc__)
     p.add_argument("--config", default=None, help="path to picopast.yaml (default: config/)")
@@ -148,6 +156,11 @@ def main(argv=None):
     sub.add_parser(
         "fallback-checks", help="pre-registered fallback checks A, B and C"
     ).set_defaults(func=_fallback_checks)
+
+    c = sub.add_parser("reconstruct", help="back-extend MOANA to 2012 from VIIRS (all groups, tiered)")
+    c.add_argument("--stage", default="all", choices=["all", "table", "validate", "apply", "report"])
+    c.add_argument("--refresh", action="store_true", help="redo cached stages")
+    c.set_defaults(func=_reconstruct)
 
     args = p.parse_args(argv)
     args.func(args)

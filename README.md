@@ -17,7 +17,7 @@ results are reported as associations, not causes.
 ```bash
 uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
-.venv/bin/python -m pytest          # 35 tests, no network
+.venv/bin/python -m pytest          # 43 tests, no network
 ```
 
 NASA downloads need a free Earthdata account (<https://urs.earthdata.nasa.gov>).
@@ -72,10 +72,17 @@ record (1991 to November 2026); a chunk-level PACE reader that fetches only the
 study box; matchup, metrics, trust-gate, split and virtual-VIIRS code with
 tests.
 
-In progress: PACE, CMC SST and VIIRS downloads for the box.
+Trust gate (binding rule, run 16 November): there are no PACE-era cell counts
+in the box, so the pre-registered fallback checks decided which groups go
+forward. **Picoeukaryotes pass** (same-month pattern vs 1991–2005 counts,
+ρ = 0.51 [0.24, 0.64]) and are reconstructed as a relative index.
+Synechococcus and Prochlorococcus are inconclusive and are not reconstructed.
+Details in [docs/reports/trust_gate_fallback.md](docs/reports/trust_gate_fallback.md).
 
-Not done yet: opening SeaBASS files; the Zarr cube; models. See
-[docs/open_items.md](docs/open_items.md).
+In progress: daily PACE for the whole PACE era (8-day files and CMC SST are
+complete); VIIRS downloads.
+
+Not done yet: the Zarr cube; models. See [docs/open_items.md](docs/open_items.md).
 
 ## Rules we hold ourselves to
 

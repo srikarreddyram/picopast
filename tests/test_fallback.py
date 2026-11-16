@@ -85,10 +85,10 @@ def test_historical_counts_drops_bcodmo_twins():
                            "lat": [21.183, 21.183, 15.0], "lon": [63.549, 63.549, 65.0],
                            "depth_m": [2.9, 20.0, 5.0], "syn_cells_ml": [45188.0, 9.0, 7.0]})
     out = historical_counts(bcodmo, pangaea)
-    # The 2.9 m BCO-DMO record is PANGAEA's 2.87 m sample; the 20 m one and the 2001 one are not.
-    assert len(out) == 4
-    assert (out["source"] == "bcodmo").sum() == 2
-    assert set(out.loc[out["source"] == "bcodmo", "depth_m"]) == {20.0, 5.0}
+    # PANGAEA holds the 1995-01-10 station, so both BCO-DMO samples from it go, whatever their
+    # depth (PANGAEA's TT054 depths are whole metres, BCO-DMO's are not); the 2001 one stays.
+    assert len(out) == 3
+    assert out.loc[out["source"] == "bcodmo", "depth_m"].tolist() == [5.0]
 
 
 def test_water_mask_uses_land_flag_not_sst_gaps(tmp_path):
@@ -114,3 +114,15 @@ def test_water_mask_uses_land_flag_not_sst_gaps(tmp_path):
 
     grid_lat, grid_lon = np.array([9.5]), np.array([80.1, 80.5, 80.9])
     np.testing.assert_array_equal(water_mask(Cfg(), grid_lat, grid_lon), [[False, True, True]])
+
+
+def test_decision_follows_preregistered_rule():
+    from picopast.fallback_run import decision
+
+    v = {("A", "pro"): "relative index supported (provisional, pigment proxy)",
+         ("C", "pro"): "pattern consistent", ("C", "syn"): "inconclusive", ("C", "peuk"): "pattern consistent"}
+    d = decision(v)
+    assert d["pro"][0] and not d["syn"][0] and d["peuk"][0]
+    # Prochlorococcus needs A as well as C.
+    assert not decision({**v, ("A", "pro"): "not supported"})["pro"][0]
+    assert not decision({k: x for k, x in v.items() if k != ("A", "pro")})["pro"][0]

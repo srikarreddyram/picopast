@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
+from scipy.stats import spearmanr
 
 from picopast.config import Config
 from picopast.fallback import pigment_proxy_verdict, spearman_bootstrap
@@ -217,12 +218,44 @@ def _fmt(s: dict) -> str:
     return f"ρ = {s['rho']:.2f} [{s['lo']:.2f}, {s['hi']:.2f}], n = {s['n']}"
 
 
+def leave_one_cruise_out(matchups: pd.DataFrame, count_col: str) -> tuple[float, float]:
+    """Smallest and largest Spearman rho when each cruise in turn is left out (descriptive)."""
+    m = matchups.dropna(subset=["sat_value", count_col])
+    rhos = [spearmanr(r[count_col], r["sat_value"])[0]
+            for cruise in m["cruise"].unique() if len(r := m[m["cruise"] != cruise]) > 2]
+    return (min(rhos), max(rhos)) if rhos else (float("nan"), float("nan"))
+
+
+def decision(verdicts: dict) -> dict:
+    """Which groups go to the reconstruction, from the primary (operational) mapping's verdicts.
+
+    Pre-registration: a group is reconstructed as a standardised relative index only if
+    check C is "pattern consistent" and, for Prochlorococcus, check A is not "not supported".
+    """
+    out = {}
+    for g in ("pro", "syn", "peuk"):
+        c = verdicts.get(("C", g))
+        a = verdicts.get(("A", "pro"))
+        ok = c == "pattern consistent" and (g != "pro" or (a is not None and a != "not supported"))
+        why = [f"C: {c}"] + ([f"A: {a}"] if g == "pro" else [])
+        out[g] = (ok, "; ".join(why))
+    return out
+
+
+_NAMES = {"pro": "Prochlorococcus", "syn": "Synechococcus", "peuk": "picoeukaryotes"}
+
+
 def report(cfg: Config, mappings=("operational", "atbd")) -> Path:
-    """Run A and B under each mapping that has maps, and write the report."""
+    """Run A, B and C under each mapping that has maps, and write the report."""
     lines = ["# Trust-gate fallback checks A, B and C", "",
              f"Generated {date.today().isoformat()} by `picopast fallback-checks`, under the rule fixed in "
              "`docs/trust_gate_preregistration.md` (16 November 2026). Check A can support Prochlorococcus "
-             "only as a relative index, never as a cells/mL label; check B is exploratory and gives no verdict; check C tests patterns against 1991–2005 counts.", ""]
+             "only as a relative index, never as a cells/mL label; check B is exploratory and gives no verdict; "
+             "check C tests patterns against 1991–2005 counts. The operational coefficient mapping is the "
+             "pre-registered one; ATBD results are reported as a sensitivity check and do not change the decision.",
+             ""]
+    summary_at = len(lines)
+    verdicts: dict = {}
     out_dir = cfg.path("interim")
     for mapping in mappings:
         try:
@@ -231,6 +264,8 @@ def report(cfg: Config, mappings=("operational", "atbd")) -> Path:
             lines += [f"## {mapping} mapping", "", f"Not run: {e}", ""]
             continue
         a["matchups"].to_csv(out_dir / f"matchups_check_a_{mapping}.csv", index=False)
+        if mapping == "operational":
+            verdicts[("A", "pro")] = a["verdict"]
         lines += [f"## {mapping} mapping", "", "### A. Prochlorococcus vs HPLC divinyl chlorophyll a", "",
                   f"**Verdict: {a['verdict']}**" + (f" ({'; '.join(a['reasons'])})" if a["reasons"] else ""), "",
                   f"- Station-days: {a['n_station_days']} ({a['n_coastal_excluded']} within "
@@ -262,15 +297,27 @@ def report(cfg: Config, mappings=("operational", "atbd")) -> Path:
                   f"Stations: {c['n_stations_total']} ({c['n_coastal_excluded']} coastal, excluded). Months covered "
                   f"by the PACE-era climatology: {c['months_in_climatology']}. The counts are 20+ years older than "
                   "the satellite record; this tests where and when values are high or low, not today's values.", "",
-                  "| group | verdict | ρ | interval | stations | cruises | zeros dropped | unmatched |",
-                  "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+                  "| group | verdict | ρ | interval | stations | cruises | zeros dropped | unmatched "
+                  "| ρ, leaving out one cruise |",
+                  "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
         for g, r in c["groups"].items():
             s = r["stats"]
             r["matchups"].to_csv(out_dir / f"matchups_check_c_{g}_{mapping}.csv", index=False)
+            if mapping == "operational":
+                verdicts[("C", g)] = r["verdict"]
+            lo, hi = leave_one_cruise_out(r["matchups"], f"{g}_cells_ml")
             why = f" ({'; '.join(r['reasons'])})" if r["reasons"] else ""
             lines.append(f"| {g} | {r['verdict']}{why} | {s['rho']:.2f} | [{s['lo']:.2f}, {s['hi']:.2f}] | {s['n']} | "
-                         f"{s['n_clusters']} | {r['n_zero_dropped']} | {r['n_unmatched']} |")
+                         f"{s['n_clusters']} | {r['n_zero_dropped']} | {r['n_unmatched']} | {lo:.2f} to {hi:.2f} |")
         lines.append("")
+    if verdicts:
+        summary = ["## Decision (operational mapping)", "",
+                   "A group is reconstructed, as a standardised relative index and never in cells/mL, only if check "
+                   "C is *pattern consistent* and, for Prochlorococcus, check A is not *not supported*.", "",
+                   "| group | reconstructed | because |", "| --- | --- | --- |"]
+        for g, (ok, why) in decision(verdicts).items():
+            summary.append(f"| {_NAMES[g]} | {'yes, relative index' if ok else 'no'} | {why} |")
+        lines[summary_at:summary_at] = summary + [""]
     out = cfg.path("reports") / "trust_gate_fallback.md"
     out.write_text("\n".join(lines) + "\n")
     return out

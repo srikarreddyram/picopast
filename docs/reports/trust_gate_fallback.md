@@ -1,6 +1,16 @@
 # Trust-gate fallback checks A, B and C
 
-Generated 2026-11-16 by `picopast fallback-checks`, under the rule fixed in `docs/trust_gate_preregistration.md` (16 November 2026). Check A can support Prochlorococcus only as a relative index, never as a cells/mL label; check B is exploratory and gives no verdict; check C tests patterns against 1991–2005 counts.
+Generated 2026-11-16 by `picopast fallback-checks`, under the rule fixed in `docs/trust_gate_preregistration.md` (16 November 2026). Check A can support Prochlorococcus only as a relative index, never as a cells/mL label; check B is exploratory and gives no verdict; check C tests patterns against 1991–2005 counts. The operational coefficient mapping is the pre-registered one; ATBD results are reported as a sensitivity check and do not change the decision.
+
+## Decision (operational mapping)
+
+A group is reconstructed, as a standardised relative index and never in cells/mL, only if check C is *pattern consistent* and, for Prochlorococcus, check A is not *not supported*.
+
+| group | reconstructed | because |
+| --- | --- | --- |
+| Prochlorococcus | no | C: inconclusive; A: not supported |
+| Synechococcus | no | C: inconclusive |
+| picoeukaryotes | yes, relative index | C: pattern consistent |
 
 ## operational mapping
 
@@ -27,7 +37,15 @@ Sensitivity to the block rule:
 - Pixel-days with flow-through data: 1320; ρ = -0.01 [-0.10, 0.07], n = 692 matched.
 
 
-### C. Not run: no operational 8-day MOANA maps; run picopast moana-run --period 8D
+### C. Same-month climatology vs 1991–2005 surface counts
+
+Stations: 257 (7 coastal, excluded). Months covered by the PACE-era climatology: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]. The counts are 20+ years older than the satellite record; this tests where and when values are high or low, not today's values.
+
+| group | verdict | ρ | interval | stations | cruises | zeros dropped | unmatched | ρ, leaving out one cruise |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| pro | inconclusive (interval [-0.21, 0.36] spans the thresholds) | 0.09 | [-0.21, 0.36] | 179 | 14 | 14 | 36 | -0.03 to 0.18 |
+| syn | inconclusive (interval [-0.09, 0.38] spans the thresholds) | 0.18 | [-0.09, 0.38] | 197 | 16 | 2 | 40 | 0.06 to 0.24 |
+| peuk | pattern consistent | 0.51 | [0.24, 0.64] | 181 | 13 | 0 | 39 | 0.44 to 0.55 |
 
 ## atbd mapping
 
@@ -54,5 +72,13 @@ Sensitivity to the block rule:
 - Pixel-days with flow-through data: 1320; ρ = -0.03 [-0.11, 0.06], n = 692 matched.
 
 
-### C. Not run: no atbd 8-day MOANA maps; run picopast moana-run --period 8D
+### C. Same-month climatology vs 1991–2005 surface counts
+
+Stations: 257 (7 coastal, excluded). Months covered by the PACE-era climatology: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]. The counts are 20+ years older than the satellite record; this tests where and when values are high or low, not today's values.
+
+| group | verdict | ρ | interval | stations | cruises | zeros dropped | unmatched | ρ, leaving out one cruise |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| pro | pattern consistent | 0.30 | [0.06, 0.47] | 179 | 14 | 14 | 36 | 0.21 to 0.36 |
+| syn | inconclusive (interval [-0.02, 0.43] spans the thresholds) | 0.22 | [-0.02, 0.43] | 197 | 16 | 2 | 40 | 0.14 to 0.29 |
+| peuk | pattern consistent | 0.51 | [0.25, 0.65] | 181 | 13 | 0 | 39 | 0.44 to 0.55 |
 

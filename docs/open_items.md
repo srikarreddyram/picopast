@@ -1,6 +1,6 @@
 # Open items
 
-Updated 16 November 2026 (week 2). Ordered by how soon each one blocks work.
+Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks work.
 
 ## Done since week 1 (16 November)
 
@@ -129,8 +129,31 @@ Updated 16 November 2026 (week 2). Ordered by how soon each one blocks work.
       reconstructed**.
     - **B (Synechococcus vs phycoerythrin, exploratory): no relationship**,
       ρ ≈ 0 over 692 pixel-days, under both mappings.
-    - **C** waits for the 8-day MOANA maps (needs the PACE 8-day download and
-      full-era CMC SST).
+    - **C (same-month PACE-era climatology vs 1991–2005 surface counts),
+      operational mapping:** picoeukaryotes **pattern consistent**, ρ = 0.51
+      [0.24, 0.64], 181 stations from 13 cruises; leaving out any one cruise
+      gives 0.44–0.55. Synechococcus **inconclusive**, ρ = 0.18 [−0.09, 0.38],
+      197 stations. Prochlorococcus **inconclusive**, ρ = 0.09 [−0.21, 0.36],
+      179 stations. Unmatched stations are all July–September (monsoon cloud
+      leaves the climatology too sparse there). Under ATBD (sensitivity only)
+      Prochlorococcus is consistent (0.30 [0.06, 0.47]); Synechococcus and
+      picoeukaryotes are as above.
+    - **First run of C counted stations twice.** The BCO-DMO compilation repeats
+      PANGAEA's 1995 JGOFS stations, and the per-sample de-duplication missed
+      most of them because PANGAEA gives TT053/TT054 depths in whole metres.
+      That run (385 stations, 4 invented cruise labels) gave Synechococcus and
+      Prochlorococcus higher ρ (operational 0.18 and 0.12; ATBD both
+      "consistent"). De-duplication is now per station (1,433 records removed),
+      C was rerun once, and the change log records it. The picoeukaryote result
+      did not change.
+    - **Decision (operational, by the pre-registered rule):** only
+      **picoeukaryotes** go to the reconstruction, as a standardised relative
+      index (never cells/mL). Synechococcus and Prochlorococcus are evaluated and
+      reported but not reconstructed.
+    - **Caveat for the paper:** MOANA picoeukaryotes track chlorophyll, so the
+      pattern match may partly be a chlorophyll pattern. The week-4 baselines
+      should include a chlorophyll-only climatology in the same check C, to show
+      how much MOANA adds.
 
 ## Not started (by design)
 

@@ -73,7 +73,7 @@ products:
   cmc_sst:                                # MOANA's SST input in the PACE era
     short_name: CMC0.1deg-CMC-L4-GLOB-v3.0
     name_pattern: "*"
-    variables: [analysed_sst]
+    variables: [analysed_sst, mask]   # mask: GHRSST flags, 1 = water, 2 = land (SST is filled over land)
 
 open_sources:
   oisst_opendap: "https://psl.noaa.gov/thredds/dodsC/Datasets/noaa.oisst.v2.highres/sst.day.mean.{year}.nc"

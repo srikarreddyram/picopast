@@ -89,3 +89,28 @@ def test_historical_counts_drops_bcodmo_twins():
     assert len(out) == 4
     assert (out["source"] == "bcodmo").sum() == 2
     assert set(out.loc[out["source"] == "bcodmo", "depth_m"]) == {20.0, 5.0}
+
+
+def test_water_mask_uses_land_flag_not_sst_gaps(tmp_path):
+    """CMC fills SST over land, so the coast must come from the mask's land flag."""
+    import xarray as xr
+
+    from picopast.fallback_run import water_mask
+
+    lat = np.arange(10.05, 9.0, -0.1)
+    lon = np.arange(80.05, 81.0, 0.1)
+    flags = np.ones((1, lat.size, lon.size), dtype=np.float32)
+    flags[:, :, :3] = 2.0  # land on the western edge
+    raw = tmp_path / "raw" / "cmc_sst"
+    raw.mkdir(parents=True)
+    xr.Dataset({"analysed_sst": (("time", "lat", "lon"), np.full(flags.shape, 300.0, np.float32)),
+                "mask": (("time", "lat", "lon"), flags)},
+               coords={"time": [np.datetime64("2025-01-01T12")], "lat": lat, "lon": lon}
+               ).to_netcdf(raw / "20250101120000-CMC-test.box.nc")
+
+    class Cfg:
+        def path(self, name):
+            return tmp_path / name
+
+    grid_lat, grid_lon = np.array([9.5]), np.array([80.1, 80.5, 80.9])
+    np.testing.assert_array_equal(water_mask(Cfg(), grid_lat, grid_lon), [[False, True, True]])

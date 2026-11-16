@@ -37,12 +37,24 @@ def _moana_days(cfg: Config, mapping: str, days: pd.DatetimeIndex) -> xr.Dataset
     return xr.open_mfdataset(paths, combine="by_coords").load() if paths else None
 
 
+def water_mask(cfg: Config, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+    """True over water on the analysis grid, from the land flag of CMC's 0.1 degree ``mask``.
+
+    CMC fills ``analysed_sst`` over land too, so SST gaps cannot mark the coast.
+    The mask is a GHRSST flag field: bit 1 = water, bit 2 = land.
+    """
+    for path in sorted((cfg.path("raw") / "cmc_sst").glob("*CMC*.nc")):
+        with xr.open_dataset(path) as ds:
+            if "mask" not in ds:
+                continue
+            flags = nearest_to_grid(ds["mask"].isel(time=0), lat, lon).transpose("lat", "lon").values
+        return np.nan_to_num(flags).astype(int) & 1 > 0
+    raise FileNotFoundError("no CMC file with a land mask; fetch cmc_sst with variables [analysed_sst, mask]")
+
+
 def _offshore(cfg: Config, maps: xr.Dataset) -> np.ndarray:
-    """Pixels at least the coast-mask distance from land, land taken from CMC's 0.1 degree mask."""
-    cmc = sorted((cfg.path("raw") / "cmc_sst").glob("*CMC*.box.nc"))
-    with xr.open_dataset(cmc[0]) as ds:
-        water = np.isfinite(nearest_to_grid(ds["analysed_sst"].isel(time=0), maps["lat"].values,
-                                            maps["lon"].values).transpose("lat", "lon").values)
+    """Pixels at least the coast-mask distance from land."""
+    water = water_mask(cfg, maps["lat"].values, maps["lon"].values)
     return coast_mask(water, maps["lat"].values, cfg["grid"]["resolution_deg"], cfg["grid"]["coast_mask_km"])
 
 

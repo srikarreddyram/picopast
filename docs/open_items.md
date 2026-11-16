@@ -98,6 +98,23 @@ Updated 16 November 2026 (week 2). Ordered by how soon each one blocks work.
     about 3 MB/s in total, so time, not disk, limits the download plan: full
     daily PACE for the box is ~18 GB but takes about a day (~85 s per file).
 
+15. **MOANA Prochlorococcus outside the Atlantic (first look, January 2025,
+    satellite only).** Under the operational mapping, 12.6% of retrieved
+    pixel-days in the box give a negative Prochlorococcus; under ATBD, 11.3%.
+    The negatives cluster near land: 57% of retrievals in water within 25 km
+    of land, 16% at 25–200 km, 6% beyond 200 km. Positive values are higher
+    than NASA's Atlantic output and nearly flat across regions (median
+    400,000–490,000 cells/mL; NASA Atlantic 2025-01-15: 274,000). Synechococcus
+    and picoeukaryotes show the expected regional contrasts, for example highest
+    Synechococcus in the western Arabian Sea upwelling. The linear
+    Prochlorococcus regression, fitted to Atlantic data, appears to extrapolate
+    here. This is consistent with NASA producing MOANA L4 only for the
+    Atlantic, and it is a result to report, not a bug. Our code matches NASA's
+    within 1% on the same inputs.
+16. **Land mask.** CMC fills SST over land, so the coast mask uses CMC's
+    `mask` flag (1 = water, 2 = land), not SST gaps. `cmc_sst` downloads now
+    keep `mask`.
+
 ## Not started (by design)
 
 - Zarr cube builder: waits for the first real PACE and VIIRS files so it is

@@ -17,7 +17,7 @@ results are reported as associations, not causes.
 ```bash
 uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
-.venv/bin/python -m pytest          # 43 tests, no network
+.venv/bin/python -m pytest          # 48 tests, no network
 ```
 
 NASA downloads need a free Earthdata account (<https://urs.earthdata.nasa.gov>).
@@ -79,10 +79,20 @@ forward. **Picoeukaryotes pass** (same-month pattern vs 1991–2005 counts,
 Synechococcus and Prochlorococcus are inconclusive and are not reconstructed.
 Details in [docs/reports/trust_gate_fallback.md](docs/reports/trust_gate_fallback.md).
 
-In progress: daily PACE for the whole PACE era (8-day files and CMC SST are
-complete); VIIRS downloads.
+Back-extension, first attempt (17 November): `picopast reconstruct` learns
+MOANA from VIIRS SNPP 8-day inputs in the PACE era and rebuilds all three
+groups for 2012–2026, each tagged with its trust-gate tier (Synechococcus and
+Prochlorococcus are exploratory). Route A beats a seasonal climatology on
+held-out blocks for every group (skill 0.39 picoeukaryotes, 0.20
+Synechococcus, 0.18 Prochlorococcus); the SST + PAR route does not. Details
+and bottlenecks in [docs/reports/reconstruction.md](docs/reports/reconstruction.md).
 
-Not done yet: the Zarr cube; models. See [docs/open_items.md](docs/open_items.md).
+In progress: daily PACE for the whole PACE era (8-day PACE, CMC SST and VIIRS
+SNPP 8-day 2012–2026 are complete).
+
+Not done yet: Route B and virtual VIIRS (need the response tables), mixed-layer
+depth (Copernicus account), the NOAA-20 copy, climate analysis. See
+[docs/open_items.md](docs/open_items.md).
 
 ## Rules we hold ourselves to
 

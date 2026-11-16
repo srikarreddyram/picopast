@@ -107,7 +107,7 @@ def _reconstruct(args):
 
     stages = ("table", "validate", "apply", "report") if args.stage == "all" else (args.stage,)
     out = reconstruct_run.run(load_config(args.config), stages=stages, refresh=args.refresh)
-    print(out.read_text())
+    print(out.read_text() if out.suffix == ".md" else f"wrote {out}")
 
 
 def main(argv=None):

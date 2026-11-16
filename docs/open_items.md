@@ -155,6 +155,33 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       should include a chlorophyll-only climatology in the same check C, to show
       how much MOANA adds.
 
+18. **Back-extension, first attempt (17 November).** `picopast reconstruct`
+    trains on the PACE-era overlap (VIIRS SNPP 8-day + OISST vs our MOANA,
+    115 periods, 1.15 million sampled pixels) and back-extends **all three
+    groups** to 2012. Each output carries its trust-gate tier: picoeukaryotes
+    a relative index; Synechococcus and Prochlorococcus *exploratory* (team
+    request after the gate; logged in the pre-registration change log).
+    Report: `docs/reports/reconstruction.md`.
+    - **Training screen.** Pixels follow the trust gate's rule (MOANA flags 0)
+      and must sit inside NASA's declared valid range for its MOANA product
+      (Pro 0–600,000; Syn 0–300,000; peuk 0–40,000 cells/mL). Without it, 7.8%
+      of PACE-era pixels (5.4% with a negative Prochlorococcus) would enter
+      training as MOANA extrapolations (Synechococcus down to
+      1e-38 cells/mL, Prochlorococcus down to −7.5 million), and they inflated
+      the scores: Route A spatial skill was 0.39 (Pro) and 0.38 (Syn) before
+      the screen and 0.18 and 0.20 after. Picoeukaryotes barely changed (0.40).
+    - **Validation, Route A vs seasonal climatology (screened):** skill 0.40
+      spatial / 0.39 temporal for picoeukaryotes (ρ 0.91 / 0.83), 0.20 / 0.11
+      for Synechococcus, 0.18 / 0.18 for Prochlorococcus; 90% intervals cover
+      87–89%. Route C (SST + PAR) never beats climatology.
+    - **Early-to-late shift, not yet a trend.** Study-box index, 2023–25 minus
+      2012–14: picoeukaryotes −0.14 SD, Synechococcus +0.12, Prochlorococcus
+      +0.17, same sign in every region. Real change or SNPP band drift; the
+      NOAA-20 copy (RQ4) decides before anything is called a trend.
+19. **SNPP 8-day record in 2026 stops at 28 August** in NASA's archive (plus
+    one period, 22–29 September). The training overlap therefore ends there;
+    NOAA-20 has 34 periods in 2026.
+
 ## Not started (by design)
 
 - Zarr cube builder: waits for the first real PACE and VIIRS files so it is

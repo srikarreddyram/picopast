@@ -136,6 +136,12 @@ reconstruction:
   sensor: snpp
   mapping: operational
   per_period_sample: 10000     # training pixels sampled per PACE-era 8-day period
+  # NASA's declared valid range for its MOANA product (valid_min/valid_max of the
+  # PACE_OCI_L4M_MOANA V3.2 variables), cells/mL. Training pixels must be inside it for all groups.
+  valid_range:
+    pro: [0, 600000]
+    syn: [0, 300000]
+    peuk: [0, 40000]
   tiers:
     peuk: "relative index: passed the trust gate (check C pattern consistent)"
     syn: "exploratory: did not pass the trust gate (check C inconclusive)"

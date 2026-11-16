@@ -21,9 +21,13 @@ exploratory only (pre-registration change log, 16 November 2026).
 
 Targets: log10 cells/mL for Synechococcus and picoeukaryotes; Prochlorococcus in
 units of 1e5 cells/mL, linear, because MOANA's Prochlorococcus regression is
-linear and goes negative (those values are kept: the model reproduces MOANA,
-negatives included). Memory: one 8-day period (600 x 1200 pixels) at a time;
-the training table is a per-period sample (~10k pixels each).
+linear. Training pixels follow the trust gate's pixel rule (MOANA flags 0, so
+no negative Prochlorococcus) and must lie inside NASA's declared valid range
+for its MOANA product for every group (config ``reconstruction.valid_range``):
+outside it, the spectrum has pushed MOANA's regressions far beyond the Atlantic
+data they were fitted to (Synechococcus down to 1e-38 cells/mL). Memory: one
+8-day period (600 x 1200 pixels) at a time; the training table is a per-period
+sample (~10k pixels each).
 """
 
 from __future__ import annotations
@@ -47,13 +51,20 @@ FEATURES = {
     "C": ["sst", "par"],
 }
 RIDGE_FEATURES = FEATURES["A"]
-UNITS = {"pro": "1e5 cells/mL (linear; may be negative, as MOANA's is)",
+UNITS = {"pro": "1e5 cells/mL (linear)",
          "syn": "log10 cells/mL", "peuk": "log10 cells/mL"}
 QUANTILES = (0.05, 0.95)
 _PERIOD = re.compile(r"\.(\d{8})_(\d{8})\.L3m\.8D\.")
 
-# MOANA flag bits (picopast.moana.algorithm): 1 negative Pro, 2 missing Rrs, 4 bad SST, 8 flat spectrum.
-_BAD = {"pro": 2 | 4 | 8, "syn": 2 | 8, "peuk": 2 | 8}
+
+
+def usable_pixels(flags: np.ndarray, cells: dict[str, np.ndarray], valid_range: dict) -> np.ndarray:
+    """Trust-gate pixel rule (MOANA flags 0) and every group inside NASA's declared valid range."""
+    ok = flags == 0
+    for g, (lo, hi) in valid_range.items():
+        with np.errstate(invalid="ignore"):
+            ok &= (cells[g] >= lo) & (cells[g] <= hi)
+    return ok
 
 
 def to_target(group: str, cells_ml):
@@ -173,16 +184,23 @@ def training_table(cfg: Config, sensor: str = "snpp", mapping: str = "operationa
     lat2, lon2 = np.meshgrid(lat, lon, indexing="ij")
     periods = viirs_periods(cfg, sensor).set_index("start")
     oisst, rng, parts = Oisst(cfg, lat, lon), np.random.default_rng(seed), []
+    screen = {"retrieved": 0, "usable": 0, "negative_pro": 0, "outside_nasa_range": 0}
     for path in sorted((cfg.path("interim") / "moana" / mapping / "8D").glob("moana_*.nc")):
         with xr.open_dataset(path) as ds:
             start, end = pd.Timestamp(ds.attrs["period_start"]), pd.Timestamp(ds.attrs["period_end"])
             if start not in periods.index:
                 continue
-            flags = ds["flags"].values[0]
-            targets = {g: np.where((flags & _BAD[g]) == 0, to_target(g, ds[g].values[0]), np.nan) for g in GROUPS}
+            cells = {g: ds[g].values[0] for g in GROUPS}
+            usable = usable_pixels(ds["flags"].values[0], cells, cfg["reconstruction"]["valid_range"])
+            targets = {g: np.where(usable, to_target(g, cells[g]), np.nan) for g in GROUPS}
         v = load_viirs(cfg, sensor, start)
         sst = oisst.mean(start, end)
-        ok = _inputs_valid(v, sst) & offshore & np.any([np.isfinite(t) for t in targets.values()], axis=0)
+        candidate = _inputs_valid(v, sst) & offshore & np.isfinite(cells["peuk"])  # MOANA ran here
+        ok = candidate & usable
+        screen["retrieved"] += int(candidate.sum())
+        screen["usable"] += int(ok.sum())
+        screen["negative_pro"] += int((candidate & (cells["pro"] < 0)).sum())
+        screen["outside_nasa_range"] += int((candidate & ~usable).sum())
         idx = np.flatnonzero(ok.ravel())
         if idx.size > per_period:
             idx = np.sort(rng.choice(idx, per_period, replace=False))
@@ -198,6 +216,9 @@ def training_table(cfg: Config, sensor: str = "snpp", mapping: str = "operationa
     table = pd.concat(parts, ignore_index=True)
     out.parent.mkdir(parents=True, exist_ok=True)
     table.to_parquet(out, index=False)
+    import json
+
+    out.with_suffix(".screen.json").write_text(json.dumps(screen, indent=2))
     return table
 
 
@@ -366,6 +387,9 @@ def regional_series(cfg: Config, sensor: str = "snpp") -> pd.DataFrame:
                        "valid_share": float(np.isfinite(sub["peuk"]).mean())}
                 for g in GROUPS:
                     if g in sub:
-                        row[g] = float(sub[g].mean())
+                        vals = sub[g].values
+                        row[g] = float(np.nanmean(vals)) if np.isfinite(vals).any() else np.nan
+                        row[f"{g}_n"] = int(np.isfinite(vals).sum())
+                        row[f"{g}_n_out"] = int((sub[f"{g}_out_of_range"].values[np.isfinite(vals)] > 0).sum())
                 rows.append(row)
     return pd.DataFrame(rows)

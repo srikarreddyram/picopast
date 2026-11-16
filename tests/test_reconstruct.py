@@ -49,3 +49,13 @@ def test_viirs_periods_need_all_bands(tmp_path):
 
     p = viirs_periods(Cfg())
     assert p["start"].tolist() == [pd.Timestamp("2024-01-01")] and p["end"].tolist() == [pd.Timestamp("2024-01-08")]
+
+
+def test_usable_pixels_needs_zero_flags_and_nasa_range():
+    from picopast.reconstruct import usable_pixels
+
+    rng = {"pro": [0, 600_000], "syn": [0, 300_000], "peuk": [0, 40_000]}
+    cells = {"pro": np.array([2e5, -1e4, 2e5, 7e5, 2e5]), "syn": np.array([1e4, 1e4, 1e4, 1e4, 1e4]),
+             "peuk": np.array([1e3, 1e3, 1e3, 1e3, 5e4])}
+    flags = np.array([0, 1, 2, 0, 0], np.uint8)  # flag 1 = negative Pro, 2 = missing Rrs
+    assert usable_pixels(flags, cells, rng).tolist() == [True, False, False, False, False]

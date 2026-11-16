@@ -1,0 +1,109 @@
+# PicoPast: the one config that drives the whole pipeline (PRD v3.1, section 6 step 1).
+# Change the study here, never in code.
+
+study_box:            # PRD section 8
+  lat_min: 0.0
+  lat_max: 25.0
+  lon_min: 50.0
+  lon_max: 100.0
+
+# PROPOSED region boxes. The PRD names the regions but gives no coordinates;
+# confirm these with the guide before the trust gate (week 3).
+regions:
+  bay_of_bengal:        {phase: 1, lat_min: 5.0,  lat_max: 22.0, lon_min: 80.0, lon_max: 95.0}
+  arabian_sea_central_east: {phase: 1, lat_min: 8.0,  lat_max: 22.0, lon_min: 62.0, lon_max: 75.0}
+  arabian_sea_west_upwelling: {phase: 2, lat_min: 10.0, lat_max: 24.0, lon_min: 52.0, lon_max: 62.0}
+  equatorial_band:      {phase: 2, lat_min: 0.0,  lat_max: 5.0,  lon_min: 50.0, lon_max: 100.0}
+
+# Month -> season. SW monsoon is reported separately (heavy cloud), PRD section 2.1.
+seasons:
+  ne_monsoon:          [12, 1, 2]
+  spring_intermonsoon: [3, 4, 5]
+  sw_monsoon:          [6, 7, 8, 9]
+  fall_intermonsoon:   [10, 11]
+core_seasons: [ne_monsoon, spring_intermonsoon, fall_intermonsoon]
+
+grid:
+  # Native "4km" L3M grid: 8640 x 4320 global, i.e. 1/24 degree (about 4.6 km at the equator).
+  resolution_deg: 0.041666666666666664
+  coast_mask_km: 25.0
+  block_deg: 2.0        # spatial-block CV, PRD section 7
+
+periods:
+  pace:        {start: "2024-03-05", end: "2026-10-31"}
+  viirs_snpp:  {start: "2012-01-02", end: "2026-10-31"}
+  viirs_noaa20: {start: "2018-01-01", end: "2026-10-31"}
+  mhw_baseline: {start: "1991-01-01", end: "2020-12-31"}
+  temporal_holdout_months: 6
+
+# NASA collections (short names and versions confirmed against CMR on 2026-11-10).
+products:
+  pace_rrs:
+    short_name: PACE_OCI_L3M_AOP        # hyperspectral Rrs lives in the AOP suite in V3.2
+    name_pattern: "*.L3m.{period}.AOP.*.4km.nc"
+    variables: [Rrs]
+  pace_moana_l4:                          # Atlantic only; code check, never a label
+    short_name: PACE_OCI_L4M_MOANA
+    name_pattern: "*.L4m.{period}.MOANA.*.4km.nc"
+    variables: [prococcus_moana, syncoccus_moana, picoeuk_moana]
+  viirs_snpp_rrs:
+    short_name: VIIRSN_L3m_RRS
+    name_pattern: "SNPP_VIIRS.*.L3m.{period}.RRS.Rrs_*.4km.nc"
+  viirs_snpp_chl:
+    short_name: VIIRSN_L3m_CHL
+    name_pattern: "SNPP_VIIRS.*.L3m.{period}.CHL.chlor_a.4km.nc"
+  viirs_snpp_kd:
+    short_name: VIIRSN_L3m_KD
+    name_pattern: "SNPP_VIIRS.*.L3m.{period}.KD.Kd_490.4km.nc"
+  viirs_snpp_par:
+    short_name: VIIRSN_L3m_PAR
+    name_pattern: "SNPP_VIIRS.*.L3m.{period}.PAR.par.4km.nc"
+  viirs_noaa20_rrs:
+    short_name: VIIRSJ1_L3m_RRS
+    name_pattern: "JPSS1_VIIRS.*.L3m.{period}.RRS.Rrs_*.4km.nc"
+  viirs_noaa20_chl:
+    short_name: VIIRSJ1_L3m_CHL
+    name_pattern: "JPSS1_VIIRS.*.L3m.{period}.CHL.chlor_a.4km.nc"
+  viirs_noaa20_kd:
+    short_name: VIIRSJ1_L3m_KD
+    name_pattern: "JPSS1_VIIRS.*.L3m.{period}.KD.Kd_490.4km.nc"
+  viirs_noaa20_par:
+    short_name: VIIRSJ1_L3m_PAR
+    name_pattern: "JPSS1_VIIRS.*.L3m.{period}.PAR.par.4km.nc"
+  cmc_sst:                                # MOANA's SST input in the PACE era
+    short_name: CMC0.1deg-CMC-L4-GLOB-v3.0
+    name_pattern: "*"
+    variables: [analysed_sst]
+
+open_sources:
+  oisst_opendap: "https://psl.noaa.gov/thredds/dodsC/Datasets/noaa.oisst.v2.highres/sst.day.mean.{year}.nc"
+  oisst_file: "https://downloads.psl.noaa.gov/Datasets/noaa.oisst.v2.highres/sst.day.mean.{year}.nc"
+  dmi: "https://psl.noaa.gov/gcos_wgsp/Timeseries/Data/dmi.had.long.data"
+  oni: "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
+
+matchup:                # PRD section 6 step 3
+  window_px: 3          # median of a 3x3 block
+  min_valid_px: 5       # of 9; PROPOSED, fix in the pre-registration
+  day_offsets: [0, -1, 1]   # same day first, then +-1 day fallback
+  max_depth_m: 10.0     # "surface" ship samples; PROPOSED
+
+# PROPOSED trust-gate rule (RQ1). It becomes binding only when the team signs
+# docs/trust_gate_preregistration.md, which must happen before any matchup is computed.
+trust_gate:
+  min_matchups: 30              # below this: pattern comparison only (PRD fallback)
+  usable_label:                 # all must hold
+    max_log_rmse: 0.50
+    max_abs_log_bias: 0.30      # about a factor of 2
+    min_spearman_ci_low: 0.30   # lower end of the cruise-bootstrap 95% interval
+    min_within_factor_2: 0.50
+  relative_index:               # ranks are right even if magnitudes are not
+    min_spearman: 0.40
+    min_spearman_ci_low: 0.0
+
+paths:
+  data: data
+  raw: data/raw
+  interim: data/interim
+  cube: data/cube
+  insitu: data/insitu
+  reports: docs/reports

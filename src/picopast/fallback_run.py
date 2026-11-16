@@ -1,4 +1,4 @@
-"""Run the pre-registered fallback checks A (pigment proxy) and B (phycoerythrin, exploratory).
+"""Run the pre-registered fallback checks A (pigment proxy), B (phycoerythrin, exploratory) and C (climatology).
 
 Inputs: SeaBASS HPLC and flow-through (CLS) files in ``data/insitu/seabass/``
 and daily MOANA maps from ``picopast moana-run``. Output: a Markdown report
@@ -133,16 +133,84 @@ def check_b(cfg: Config, mapping: str = "operational") -> dict:
     return {"mapping": mapping, "n_pixel_days": int(len(pts)), "stats": s, "matchups": m}
 
 
+def historical_surface_stations(cfg: Config) -> pd.DataFrame:
+    """1991-2005 surface counts in the box, one row per station (its shallowest sample <= max depth).
+
+    Zero and negative counts are dropped per group, as the pre-registered data
+    rule says; they are counted in the report because zeros can be real absences.
+    """
+    from picopast.insitu.historical import historical_counts
+
+    h = historical_counts(pd.read_csv(cfg.path("insitu") / "bcodmo_global_compilation_box.csv"),
+                          pd.read_csv(cfg.path("insitu") / "pangaea_counts_box.csv"))
+    b = cfg.box
+    h = h[(h["depth_m"] <= cfg["matchup"]["max_depth_m"]) & h["lat"].between(b.lat_min, b.lat_max)
+          & h["lon"].between(b.lon_min, b.lon_max) & (h["time_utc"] < pd.Timestamp("2012-01-01"))]
+    h = h.assign(station_key=h["cruise"].astype(str) + "_" + h["time_utc"].dt.strftime("%Y%m%d") + "_"
+                 + h["lat"].round(3).astype(str) + "_" + h["lon"].round(3).astype(str))
+    return h.sort_values("depth_m").groupby("station_key", as_index=False).first()
+
+
+def _monthly_climatology(cfg: Config, mapping: str, offshore: np.ndarray | None = None):
+    """PACE-era MOANA climatology by calendar month from the 8-day maps (month of each period's middle day)."""
+    paths = sorted((cfg.path("interim") / "moana" / mapping / "8D").glob("moana_*.nc"))
+    if not paths:
+        return None
+    ds = xr.open_mfdataset(paths, combine="by_coords")
+    with xr.open_dataset(paths[0]) as first:
+        span = pd.Timestamp(first.attrs["period_end"]) - pd.Timestamp(first.attrs["period_start"])
+    mids = pd.DatetimeIndex(ds["time"].values) + span / 2
+    ds = ds.assign_coords(month=("time", mids.month))
+    if offshore is None:
+        offshore = _offshore(cfg, ds.isel(time=0))
+    clim = {}
+    for g in ("pro", "syn", "peuk"):
+        valid = ds[g].where((ds["flags"] == 0) & offshore)
+        clim[g] = valid.groupby("month").mean("time").load()
+    return clim, offshore
+
+
+def check_c(cfg: Config, mapping: str = "operational") -> dict:
+    """Check C: same-calendar-month PACE-era MOANA climatology vs 1991-2005 surface counts, per group."""
+    from picopast.fallback import climatology_verdict
+
+    out = _monthly_climatology(cfg, mapping)
+    if out is None:
+        raise FileNotFoundError(f"no {mapping} 8-day MOANA maps; run picopast moana-run --period 8D")
+    clim, offshore = out
+    m_cfg, rule = cfg["matchup"], cfg["trust_gate"]["climatology_pattern"]
+    st = historical_surface_stations(cfg)
+    st = _station_points(st, offshore, clim["pro"])
+    res = {"mapping": mapping, "n_stations_total": int(len(st)), "n_coastal_excluded": int((~st["offshore"]).sum()),
+           "months_in_climatology": sorted(int(m) for m in clim["pro"]["month"].values), "groups": {}}
+    st = st[st["offshore"]]
+    for g in ("pro", "syn", "peuk"):
+        col = f"{g}_cells_ml"
+        s = st[st[col].notna()]
+        n_zero = int((s[col] <= 0).sum())
+        s = s[s[col] > 0]
+        # Same-month lookup through the matchup code: a dummy year, months as days, no day offsets.
+        field = clim[g].rename(month="time").assign_coords(
+            time=pd.to_datetime([f"2000-{int(m):02d}-01" for m in clim[g]["month"].values]))
+        s = s.assign(time_utc=pd.to_datetime("2000-" + s["time_utc"].dt.strftime("%m") + "-01"))
+        m = match(s, field, m_cfg["window_px"], m_cfg["min_valid_px"], (0,))
+        stats = spearman_bootstrap(m["sat_value"], m[col], m["cruise"], n_boot=cfg["trust_gate"]["n_bootstrap"])
+        verdict, reasons = climatology_verdict(stats, rule)
+        res["groups"][g] = {"stats": stats, "verdict": verdict, "reasons": reasons, "n_zero_dropped": n_zero,
+                            "n_unmatched": int(m["sat_value"].isna().sum()), "matchups": m}
+    return res
+
+
 def _fmt(s: dict) -> str:
     return f"ρ = {s['rho']:.2f} [{s['lo']:.2f}, {s['hi']:.2f}], n = {s['n']}"
 
 
 def report(cfg: Config, mappings=("operational", "atbd")) -> Path:
     """Run A and B under each mapping that has maps, and write the report."""
-    lines = ["# Trust-gate fallback checks A and B", "",
+    lines = ["# Trust-gate fallback checks A, B and C", "",
              f"Generated {date.today().isoformat()} by `picopast fallback-checks`, under the rule fixed in "
              "`docs/trust_gate_preregistration.md` (16 November 2026). Check A can support Prochlorococcus "
-             "only as a relative index, never as a cells/mL label; check B is exploratory and gives no verdict.", ""]
+             "only as a relative index, never as a cells/mL label; check B is exploratory and gives no verdict; check C tests patterns against 1991–2005 counts.", ""]
     out_dir = cfg.path("interim")
     for mapping in mappings:
         try:
@@ -173,6 +241,24 @@ def report(cfg: Config, mappings=("operational", "atbd")) -> Path:
                       f"- Pixel-days with flow-through data: {b['n_pixel_days']}; {_fmt(b['stats'])} matched.", ""]
         except FileNotFoundError as e:
             lines += ["", f"### B. Not run: {e}", ""]
-    out = cfg.path("reports") / "trust_gate_fallback_ab.md"
+        try:
+            c = check_c(cfg, mapping)
+        except FileNotFoundError as e:
+            lines += ["", f"### C. Not run: {e}", ""]
+            continue
+        lines += ["", "### C. Same-month climatology vs 1991–2005 surface counts", "",
+                  f"Stations: {c['n_stations_total']} ({c['n_coastal_excluded']} coastal, excluded). Months covered "
+                  f"by the PACE-era climatology: {c['months_in_climatology']}. The counts are 20+ years older than "
+                  "the satellite record; this tests where and when values are high or low, not today's values.", "",
+                  "| group | verdict | ρ | interval | stations | cruises | zeros dropped | unmatched |",
+                  "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+        for g, r in c["groups"].items():
+            s = r["stats"]
+            r["matchups"].to_csv(out_dir / f"matchups_check_c_{g}_{mapping}.csv", index=False)
+            why = f" ({'; '.join(r['reasons'])})" if r["reasons"] else ""
+            lines.append(f"| {g} | {r['verdict']}{why} | {s['rho']:.2f} | [{s['lo']:.2f}, {s['hi']:.2f}] | {s['n']} | "
+                         f"{s['n_clusters']} | {r['n_zero_dropped']} | {r['n_unmatched']} |")
+        lines.append("")
+    out = cfg.path("reports") / "trust_gate_fallback.md"
     out.write_text("\n".join(lines) + "\n")
     return out

@@ -146,7 +146,7 @@ def main(argv=None):
     c.set_defaults(func=_moana_run)
 
     sub.add_parser(
-        "fallback-checks", help="pre-registered checks A (DVChl a) and B (phycoerythrin)"
+        "fallback-checks", help="pre-registered fallback checks A, B and C"
     ).set_defaults(func=_fallback_checks)
 
     args = p.parse_args(argv)

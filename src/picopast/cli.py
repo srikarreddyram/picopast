@@ -85,6 +85,16 @@ def _moana_check(args):
     print(json.dumps(report, indent=2))
 
 
+def _moana_run(args):
+    from picopast.moana import box_run
+
+    cfg = load_config(args.config)
+    written, skipped = box_run.run(cfg, args.start, args.end, args.period, args.pc_mapping, args.refresh)
+    print(f"{len(written)} MOANA maps in {cfg.path('interim') / 'moana' / args.period}")
+    if skipped:
+        print(f"{len(skipped)} scenes skipped (no CMC SST yet): {skipped[0]} ...")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="picopast", description=__doc__)
     p.add_argument("--config", default=None, help="path to picopast.yaml (default: config/)")
@@ -119,6 +129,14 @@ def main(argv=None):
     c.add_argument("date", help="YYYY-MM-DD")
     c.add_argument("--pc-mapping", default="operational", choices=["operational", "atbd"])
     c.set_defaults(func=_moana_check)
+
+    c = sub.add_parser("moana-run", help="run MOANA on downloaded PACE box files")
+    c.add_argument("start", help="YYYY-MM-DD")
+    c.add_argument("end", help="YYYY-MM-DD")
+    c.add_argument("--period", default="DAY", choices=["DAY", "8D"])
+    c.add_argument("--pc-mapping", default="operational", choices=["operational", "atbd"])
+    c.add_argument("--refresh", action="store_true", help="recompute existing maps")
+    c.set_defaults(func=_moana_run)
 
     args = p.parse_args(argv)
     args.func(args)

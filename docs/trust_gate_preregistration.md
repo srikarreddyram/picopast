@@ -74,8 +74,10 @@ support or fail to support **Relative index only**.
 - **Ship data:** HPLC divinyl chlorophyll a (DVChl a, mg m⁻³), which only
   *Prochlorococcus* makes, from SeaBASS (EKAMSAT 2024 Bay of Bengal, OceanX
   January 2025), surface (≤ 10 m), inside the box, dated 5 March 2024 or later.
-  Samples with the same `hplc_gsfc_id` are counted once. Where one station-day
-  has several surface samples, their median is used.
+  Samples with the same `hplc_gsfc_id` are counted once. A **station-day** is
+  one UTC date and one pixel of the 4.6 km L3M grid; where it has several
+  surface samples (replicates, or one station in two file releases), their
+  median is used.
 - **Matchup:** as above (same day, then ±1 day; 3×3 median; ≥ 5 of 9 valid
   pixels; coast mask).
 - **Metric:** Spearman ρ between MOANA *Prochlorococcus* (cells/mL) and DVChl
@@ -140,3 +142,4 @@ sensitivity table for the 3×3 window and the 5-pixel minimum.
 | --- | --- | --- |
 | 2026-11-10 | First draft | — |
 | 2026-11-16 | Thresholds accepted unchanged; fallback checks A–C added; status set to binding | SeaBASS search found no PACE-era cell counts in the box but did find HPLC pigments and phycoerythrin fluorescence. Added before any comparison was made. |
+| 2026-11-16 | Station-day defined as one UTC date in one 4.6 km grid pixel | The two EKAMSAT 2024 releases name stations differently. Defined before any comparison. |

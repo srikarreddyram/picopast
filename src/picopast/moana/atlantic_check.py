@@ -26,7 +26,12 @@ def run(cfg: Config, day: str, patch: Box = ATLANTIC_PATCH, pc_mapping: str = "o
     kw = {"region": patch, "tag": "atl"}
     rrs_path = earthdata.fetch(cfg, "pace_rrs", day, day, "DAY", **kw)[0]
     l4_path = earthdata.fetch(cfg, "pace_moana_l4", day, day, "DAY", **kw)[0]
-    sst_path = earthdata.fetch(cfg, "cmc_sst", day, day, **kw)[0]
+    # CMC files overlapping the day include the previous day's analysis; the
+    # same-day file (named YYYYMMDD120000-...) agrees better with NASA's L4
+    # Prochlorococcus (2025-01-15: share within 1% 0.71 vs 0.58).
+    sst_paths = earthdata.fetch(cfg, "cmc_sst", day, day, **kw)
+    stamp = day.replace("-", "")
+    sst_path = next((p for p in sst_paths if p.name.startswith(stamp)), sst_paths[0])
 
     with xr.open_dataset(rrs_path) as rrs_ds, xr.open_dataset(l4_path) as nasa, xr.open_dataset(
         sst_path

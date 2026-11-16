@@ -1,0 +1,73 @@
+"""Fallback checks, pigment station-days and the MOANA box runner's file handling.
+
+Made-up numbers only: these check arithmetic and thresholds, not results.
+"""
+
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from picopast.config import Box
+from picopast.fallback import climatology_verdict, pigment_proxy_verdict, spearman_bootstrap
+from picopast.insitu.pigments import station_days
+from picopast.moana.box_run import scene_period
+
+RULE_A = {"min_station_days": 15, "min_spearman": 0.40, "min_spearman_ci_low": 0.0}
+RULE_C = {"min_stations": 30, "min_cruises": 3, "consistent_ci_low": 0.0, "inconsistent_ci_high": 0.30}
+
+
+def test_spearman_bootstrap_monotone_and_clusters():
+    x = np.arange(40.0)
+    s = spearman_bootstrap(x, x**2, cluster=np.repeat(np.arange(8), 5), n_boot=200)
+    assert s["rho"] == pytest.approx(1.0)
+    assert s["lo"] == pytest.approx(1.0) and s["n"] == 40 and s["n_clusters"] == 8
+    one = spearman_bootstrap(x, -x, cluster=np.zeros(40), n_boot=200)
+    assert one["rho"] == pytest.approx(-1.0) and np.isnan(one["lo"])  # one cluster: no interval
+
+
+def test_pigment_proxy_verdict():
+    good = {"rho": 0.6, "lo": 0.2, "hi": 0.8, "n": 20, "n_clusters": 20}
+    assert pigment_proxy_verdict(good, RULE_A)[0].startswith("relative index supported")
+    assert pigment_proxy_verdict({**good, "n": 14}, RULE_A)[0] == "not supported"
+    assert pigment_proxy_verdict({**good, "rho": 0.39}, RULE_A)[0] == "not supported"
+    assert pigment_proxy_verdict({**good, "lo": 0.0}, RULE_A)[0] == "not supported"  # strictly above 0
+    assert pigment_proxy_verdict({**good, "rho": float("nan")}, RULE_A)[0] == "not supported"
+
+
+def test_climatology_verdict():
+    base = {"rho": 0.3, "lo": 0.1, "hi": 0.5, "n": 40, "n_clusters": 5}
+    assert climatology_verdict(base, RULE_C)[0] == "pattern consistent"
+    assert climatology_verdict({**base, "lo": -0.4, "hi": 0.2}, RULE_C)[0] == "pattern not consistent"
+    assert climatology_verdict({**base, "lo": -0.1, "hi": 0.6}, RULE_C)[0] == "inconclusive"
+    assert climatology_verdict({**base, "n_clusters": 2}, RULE_C)[0] == "inconclusive"
+
+
+def test_station_days_merges_replicates_and_filters():
+    t = pd.Timestamp("2024-05-01 06:00")
+    s = pd.DataFrame({
+        "sample_id": ["a", "a", "b", "c", "d", "e", "f"],
+        "cruise": "X", "station": ["1", "1", "1b", "2", "3", "4", "5"],
+        "time_utc": [t, t, t, t, t, pd.Timestamp("2024-01-01"), t],
+        "lat": [10.01, 10.01, 10.012, 12.01, 30.0, 10.01, 12.01],  # 10.0 is a pixel edge
+        "lon": [85.01, 85.01, 85.012, 86.01, 85.0, 85.01, 86.01],
+        "depth_m": [0, 0, 5, 0, 0, 0, 50],
+        "dv_chl_a": [0.02, 0.02, 0.04, 0.10, 0.5, 0.5, 0.9],
+        "zea": 0.05, "tchl": 0.2,
+    })
+    box = Box(lat_min=0, lat_max=25, lon_min=50, lon_max=100)
+    out = station_days(s, box, start="2024-03-05")
+    # "a" duplicate dropped; a+b share a pixel and day -> one row (median 0.03);
+    # 30N is outside the box, January is before PACE, 50 m is not surface.
+    assert len(out) == 2
+    merged = out[out["n_samples"] == 2].iloc[0]
+    assert merged["dv_chl_a"] == pytest.approx(0.03)
+    assert set(out["dv_chl_a"].round(3)) == {0.03, 0.10}
+
+
+def test_scene_period():
+    d = scene_period(Path("PACE_OCI.20250115.L3m.DAY.AOP.V3_2.4km.box.nc"))
+    assert d == (pd.Timestamp("2025-01-15"), pd.Timestamp("2025-01-15"), "DAY")
+    e = scene_period(Path("PACE_OCI.20240305_20240312.L3m.8D.AOP.V3_2.4km.box.nc"))
+    assert e == (pd.Timestamp("2024-03-05"), pd.Timestamp("2024-03-12"), "8D")

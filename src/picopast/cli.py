@@ -90,9 +90,16 @@ def _moana_run(args):
 
     cfg = load_config(args.config)
     written, skipped = box_run.run(cfg, args.start, args.end, args.period, args.pc_mapping, args.refresh)
-    print(f"{len(written)} MOANA maps in {cfg.path('interim') / 'moana' / args.period}")
+    print(f"{len(written)} MOANA maps in {cfg.path('interim') / 'moana' / args.pc_mapping / args.period}")
     if skipped:
         print(f"{len(skipped)} scenes skipped (no CMC SST yet): {skipped[0]} ...")
+
+
+def _fallback_checks(args):
+    from picopast import fallback_run
+
+    out = fallback_run.report(load_config(args.config))
+    print(out.read_text())
 
 
 def main(argv=None):
@@ -137,6 +144,10 @@ def main(argv=None):
     c.add_argument("--pc-mapping", default="operational", choices=["operational", "atbd"])
     c.add_argument("--refresh", action="store_true", help="recompute existing maps")
     c.set_defaults(func=_moana_run)
+
+    sub.add_parser(
+        "fallback-checks", help="pre-registered checks A (DVChl a) and B (phycoerythrin)"
+    ).set_defaults(func=_fallback_checks)
 
     args = p.parse_args(argv)
     args.func(args)

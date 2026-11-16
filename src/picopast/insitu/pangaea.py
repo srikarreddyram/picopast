@@ -104,3 +104,63 @@ def inventory(box: Box, cache_dir: Path) -> pd.DataFrame:
         return df
     keep = df[["has_pro", "has_syn", "has_peuk"]].fillna(False).any(axis=1)
     return df[keep].sort_values("time_start").reset_index(drop=True)
+
+
+#: Count columns in PANGAEA station tables -> our group columns.
+_COUNT_COLUMNS = {
+    "pro_cells_ml": re.compile(r"^Prochlorococcus \[#/ml\]"),
+    "syn_cells_ml": re.compile(r"^Synechococcus \[#/ml\]"),
+    "peuk_cells_ml": re.compile(r"^(Phytopl(ankton)? ultra euk|Picoeukaryotes?|Phytopl pico euk)\w* \[#/ml\]", re.I),
+}
+
+
+def _header_value(header: str, key: str) -> str | None:
+    m = re.search(rf"{key}:\s*([^*\n]+)", header)
+    return m.group(1).strip() if m else None
+
+
+def read_station_table(text: str, doi: str) -> pd.DataFrame:
+    """One PANGAEA station dataset (``?format=textfile``) in the common ship-count layout.
+
+    Single-station datasets give position, time and campaign in the header's
+    Event line and the counts in a tab-separated table below ``*/``.
+    """
+    from picopast.insitu.schema import standardise
+
+    header, _, table = text.partition("*/\n")
+    event = next((ln for ln in header.splitlines() if ln.startswith("Event(s):")), "")
+    df = pd.read_csv(pd.io.common.StringIO(table), sep="\t")
+    out = pd.DataFrame({
+        "source": "pangaea",
+        "dataset_id": doi,
+        "cruise": _header_value(event, "CAMPAIGN"),
+        "station": event.split("\t", 1)[-1].split(" ", 1)[0] if event else None,
+        "time_utc": _header_value(event, "DATE/TIME"),
+        "lat": float(_header_value(event, "LATITUDE") or "nan"),
+        "lon": float(_header_value(event, "LONGITUDE") or "nan"),
+        "depth_m": df["Depth water [m]"] if "Depth water [m]" in df else float("nan"),
+        "method": "flow cytometry",
+        "url": f"https://doi.pangaea.de/{doi}",
+    }, index=df.index)
+    for column, pattern in _COUNT_COLUMNS.items():
+        match = next((c for c in df.columns if pattern.search(c)), None)
+        out[column] = df[match] if match else float("nan")
+    return standardise(out)
+
+
+def fetch_station_counts(dois: list[str], cache_dir: Path, pause_s: float = 0.25) -> pd.DataFrame:
+    """Counts from single-station PANGAEA datasets, text files cached on disk."""
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    frames = []
+    for doi in dois:
+        cached = cache_dir / (doi.replace("/", "_") + ".txt")
+        if not cached.exists():
+            r = requests.get(f"https://doi.pangaea.de/{doi}", params={"format": "textfile"}, timeout=120)
+            r.raise_for_status()
+            cached.write_text(r.text)
+            time.sleep(pause_s)  # be polite to a free service
+        text = cached.read_text()
+        if "Event(s):" not in text or "\t" not in text.split("*/\n", 1)[-1][:500]:
+            continue  # not a single-station table (e.g. a global compilation)
+        frames.append(read_station_table(text, doi))
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()

@@ -71,3 +71,21 @@ def test_scene_period():
     assert d == (pd.Timestamp("2025-01-15"), pd.Timestamp("2025-01-15"), "DAY")
     e = scene_period(Path("PACE_OCI.20240305_20240312.L3m.8D.AOP.V3_2.4km.box.nc"))
     assert e == (pd.Timestamp("2024-03-05"), pd.Timestamp("2024-03-12"), "8D")
+
+
+def test_historical_counts_drops_bcodmo_twins():
+    from picopast.insitu.historical import historical_counts
+
+    t = "1995-01-10T05:00:00"
+    pangaea = pd.DataFrame({"source": "pangaea", "cruise": "TT043", "time_utc": [t, t],
+                            "lat": [21.1826, 21.1826], "lon": [63.5491, 63.5491], "depth_m": [2.87, 40.0],
+                            "syn_cells_ml": [45188.0, 1000.0]})
+    bcodmo = pd.DataFrame({"source": "bcodmo", "cruise": "bcodmo_1995-01",
+                           "time_utc": ["1995-01-10", "1995-01-10", "2001-05-01"],
+                           "lat": [21.183, 21.183, 15.0], "lon": [63.549, 63.549, 65.0],
+                           "depth_m": [2.9, 20.0, 5.0], "syn_cells_ml": [45188.0, 9.0, 7.0]})
+    out = historical_counts(bcodmo, pangaea)
+    # The 2.9 m BCO-DMO record is PANGAEA's 2.87 m sample; the 20 m one and the 2001 one are not.
+    assert len(out) == 4
+    assert (out["source"] == "bcodmo").sum() == 2
+    assert set(out.loc[out["source"] == "bcodmo", "depth_m"]) == {20.0, 5.0}

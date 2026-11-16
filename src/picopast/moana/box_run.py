@@ -8,7 +8,7 @@ output than the previous day's file). An 8-day composite is paired with the
 mean of the daily CMC files in its period, and at least half of them must be
 present.
 
-Output: ``data/interim/moana/<period>/moana_<start>.nc`` with pro, syn and
+Output: ``data/interim/moana/<pc_mapping>/<period>/moana_<start>.nc`` with pro, syn and
 peuk in cells/mL, MOANA flags, and a length-1 time axis at the period start,
 so a run of files opens as one cube with ``xr.open_mfdataset``.
 """
@@ -64,7 +64,7 @@ def run_file(cfg: Config, rrs_path: Path, pc_mapping: str = "operational",
              refresh: bool = False, cmc: dict | None = None) -> Path | None:
     """MOANA for one PACE box file. Returns the output path, or None if SST is missing."""
     start, end, period = scene_period(rrs_path)
-    out_dir = cfg.path("interim") / "moana" / period
+    out_dir = cfg.path("interim") / "moana" / pc_mapping / period
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"moana_{start:%Y%m%d}.nc"
     if out.exists() and not refresh:

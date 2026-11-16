@@ -17,7 +17,7 @@ results are reported as associations, not causes.
 ```bash
 uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
-.venv/bin/python -m pytest          # 29 tests, a few seconds, no network
+.venv/bin/python -m pytest          # 35 tests, no network
 ```
 
 NASA downloads need a free Earthdata account (<https://urs.earthdata.nasa.gov>).
@@ -62,16 +62,20 @@ docs/
 data/                     not in git; rebuilt from the config
 ```
 
-## Status (10 November 2026, week 1)
+## Status (16 November 2026, week 2)
 
 Done: repository and environment; our MOANA implementation, checked against an
-independent reference written from the ATBD equations; data-access check;
-ship-count inventory of the open archives; DMI, ONI and OISST downloads;
-matchup, metrics, trust-gate, split and virtual-VIIRS code with tests.
+independent reference written from the ATBD equations and against NASA's own
+Atlantic L4 output (within 1% median for all three groups); data-access check;
+ship-count inventory of the open archives; DMI, ONI and the complete OISST
+record (1991 to November 2026); a chunk-level PACE reader that fetches only the
+study box; matchup, metrics, trust-gate, split and virtual-VIIRS code with
+tests.
 
-Not done yet: anything that needs the Earthdata login (PACE and VIIRS
-downloads, the Atlantic MOANA check, opening SeaBASS files); the Zarr cube;
-models. See [docs/open_items.md](docs/open_items.md).
+In progress: PACE, CMC SST and VIIRS downloads for the box.
+
+Not done yet: opening SeaBASS files; the Zarr cube; models. See
+[docs/open_items.md](docs/open_items.md).
 
 ## Rules we hold ourselves to
 

@@ -7,8 +7,8 @@ study_box:            # PRD section 8
   lon_min: 50.0
   lon_max: 100.0
 
-# PROPOSED region boxes. The PRD names the regions but gives no coordinates;
-# confirm these with the guide before the trust gate (week 3).
+# Region boxes. The PRD names the regions but gives no coordinates; these were
+# drafted 10 Nov and fixed 16 Nov 2026 (docs/open_items.md, item 4).
 regions:
   bay_of_bengal:        {phase: 1, lat_min: 5.0,  lat_max: 22.0, lon_min: 80.0, lon_max: 95.0}
   arabian_sea_central_east: {phase: 1, lat_min: 8.0,  lat_max: 22.0, lon_min: 62.0, lon_max: 75.0}
@@ -83,12 +83,12 @@ open_sources:
 
 matchup:                # PRD section 6 step 3
   window_px: 3          # median of a 3x3 block
-  min_valid_px: 5       # of 9; PROPOSED, fix in the pre-registration
+  min_valid_px: 5       # of 9; fixed 2026-11-16 (pre-registration)
   day_offsets: [0, -1, 1]   # same day first, then +-1 day fallback
-  max_depth_m: 10.0     # "surface" ship samples; PROPOSED
+  max_depth_m: 10.0     # "surface" ship samples; fixed 2026-11-16
 
-# PROPOSED trust-gate rule (RQ1). It becomes binding only when the team signs
-# docs/trust_gate_preregistration.md, which must happen before any matchup is computed.
+# Trust-gate rule (RQ1), binding since 2026-11-16: frozen with
+# docs/trust_gate_preregistration.md; change only via its change log.
 trust_gate:
   min_matchups: 30              # below this: pattern comparison only (PRD fallback)
   usable_label:                 # all must hold
@@ -99,6 +99,19 @@ trust_gate:
   relative_index:               # ranks are right even if magnitudes are not
     min_spearman: 0.40
     min_spearman_ci_low: 0.0
+  # Fallbacks when cell counts are missing (pre-registration, added 2026-11-16).
+  pigment_proxy:                # A: HPLC DVChl a vs MOANA Prochlorococcus, PACE era
+    pigment: dv_chl_a
+    min_station_days: 15
+    min_spearman: 0.40
+    min_spearman_ci_low: 0.0    # strictly above
+    bootstrap_unit: station_day
+  climatology_pattern:          # C: 1991-2005 counts vs same-month PACE-era MOANA
+    min_stations: 30
+    min_cruises: 3
+    consistent_ci_low: 0.0      # lower end strictly above -> pattern consistent
+    inconsistent_ci_high: 0.30  # upper end below -> pattern not consistent
+  n_bootstrap: 2000
 
 paths:
   data: data

@@ -1,33 +1,64 @@
 # Open items
 
-Updated 10 November 2026 (week 1). Ordered by how soon each one blocks work.
+Updated 16 November 2026 (week 2). Ordered by how soon each one blocks work.
+
+## Done since week 1 (16 November)
+
+- **Earthdata login** stored in `~/.netrc` on the main machine.
+- **Atlantic MOANA check passed** (`picopast moana-check 2025-01-15`, operational
+  mapping). Same 32,550 valid pixels as NASA's L4 file; median difference
+  0.8% (Prochlorococcus), 0.4% (Synechococcus), 0.3% (picoeukaryotes); 95% of
+  pixels within 2.7%, 3.6% and 2.3%.
+- **OISST complete**, 1991-01-01 to 2026-11-14, no missing days. The file
+  download now resumes after a dropped connection (HTTP Range).
+- **Fast PACE box reader.** A PACE AOP file is ~840 MB; our box is ~20 MB of
+  it. The reader walks the HDF5 chunk index in parallel and fetches only the
+  box's chunks: ~10x faster than reading through xarray, values identical,
+  and files stored as NASA's int16 (half the size). Tests in
+  `tests/test_ingest.py`.
+- **Downloads queued** (box subsets): January 2025 for PACE, CMC SST and all
+  VIIRS products; then PACE 8-day and CMC SST and PACE daily for the whole PACE
+  era.
 
 ## Blocking now
 
-1. **Earthdata login.** Run `.venv/bin/picopast login` once on this machine.
-   Until then: no PACE or VIIRS downloads, no Atlantic MOANA check, no SeaBASS
-   files. Also create the Copernicus Marine account (mixed-layer depth, week 2).
-2. **First commands after login**, in this order:
-   - `picopast moana-check 2025-01-15` — our MOANA vs NASA's Atlantic file.
-     This is the first live run of the download code, so expect to fix
-     file-layout details.
-   - `picopast fetch pace_rrs 2025-01-01 2025-01-31` and the VIIRS products for
-     the same month — the one-month test cube and the monsoon-coverage check.
-   - Open every regional SeaBASS collection listed in
-     `docs/reports/data_inventory.md` and read the file headers for cell counts.
+1. **Copernicus Marine account** for mixed-layer depth (week 2).
+2. **SeaBASS files: first pass done (16 November).** The three regional
+   collections that overlap the PACE era (PVST_NORTHERN_INDIAN_OCEAN,
+   EKAMSAT_Pilot_ASTRAL, OCEANX_2025) hold **no flow cytometry or cell
+   counts**. The two "candidate" files (`*_CLS.sb`) are flow-through
+   fluorometer records, though their phycoerythrin channels (Fpe565/578/590)
+   track Synechococcus-type pigment. They **do** hold HPLC pigments, including
+   divinyl chlorophyll a (unique to Prochlorococcus) and zeaxanthin
+   (cyanobacteria). Surface (<= 10 m) samples inside the box:
+   - PACE era: 95 samples, roughly 27 station-days on 16 days. EKAMSAT Bay of
+     Bengal, 28 April to 11 May 2024 (two releases, mostly distinct sample IDs),
+     plus OceanX 9-10 January 2025 near the equator.
+   - VIIRS era: 43 samples, EKAMSAT pilot, Arabian Sea, 11-24 June 2023.
+   Files are in `data/insitu/seabass/`. ASIRI (2013) and the older collections
+   are not yet opened.
 
-## Decisions for the team and guide (before week 3)
+## Decisions (made 16 November by Ramachandra; Aryan and the guide did not review)
 
-3. **Sign the trust-gate rule** in `docs/trust_gate_preregistration.md`. The
-   thresholds in it are proposals. It must be fixed before any matchup is run.
-4. **Region boxes.** The PRD names the regions but gives no coordinates. The
-   boxes in `config/picopast.yaml` are proposals: Bay of Bengal 5–22°N,
-   80–95°E; central/eastern Arabian Sea 8–22°N, 62–75°E.
+3. **Trust-gate rule: fixed.** `docs/trust_gate_preregistration.md` is
+   binding. Thresholds were accepted unchanged, and fallback checks were
+   added: a DVChl a pigment proxy for Prochlorococcus, phycoerythrin for
+   Synechococcus (exploratory only), and a same-month climatological pattern
+   check against the 1991–2005 counts.
+4. **Region boxes: fixed** as drafted. Bay of Bengal 5–22°N, 80–95°E;
+   central/eastern Arabian Sea 8–22°N, 62–75°E.
 5. **Ship-count shortfall.** See the inventory report. If the 2024+ count
    stays below about 30 matchups per group after SeaBASS files and published
    tables are read, the PRD's fallback applies (pattern comparison instead of
    absolute errors) and RQ1 and RQ4 must be worded accordingly. Decide early
    whether that changes the paper's headline.
+   **Decided 16 November:** the open archives give no PACE-era cell counts in
+   the box, so the fallback applies to all three groups. The paper frames
+   MOANA as a **relative index checked against patterns**, not as validated
+   abundances. The DVChl a pigment proxy (Prochlorococcus) and the
+   climatological pattern check are written into the pre-registration. If
+   the published tables (item 6) later yield 2024+ cell counts, they are
+   added under the main rule, and the change log records it.
 6. **Published tables.** The two 2026 papers named in the PRD could not be
    read from here (publisher pages refuse automated access or need a login).
    Someone with library access needs to check each for station-level tables
@@ -61,6 +92,11 @@ Updated 10 November 2026 (week 1). Ordered by how soon each one blocks work.
     download now stops cleanly on 429, and `picopast fetch-open --oisst-method
     file` fetches each global yearly file (about 0.5 GB), keeps the box and
     deletes the rest. Both methods give identical grids.
+
+14. **Download environment.** The main machine sleeps on battery and freezes
+    transfers, so long downloads run under `caffeinate -i`. The line gives
+    about 3 MB/s in total, so time, not disk, limits the download plan: full
+    daily PACE for the box is ~18 GB but takes about a day (~85 s per file).
 
 ## Not started (by design)
 

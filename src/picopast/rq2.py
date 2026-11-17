@@ -91,6 +91,15 @@ def table(cfg: Config, per_period: int = 5000, seed: int = 0, refresh: bool = Fa
         d |= {"sst": sst.ravel()[idx], "lat": lat2.ravel()[idx].astype(np.float32),
               "lon": lon2.ravel()[idx].astype(np.float32), "doy_sin": np.full(idx.size, np.sin(doy), np.float32),
               "doy_cos": np.full(idx.size, np.cos(doy), np.float32)}
+        # Real VIIRS SNPP bands of the same period on the same pixels, for Route B trained on real matchups.
+        # Extra columns only: the sample is drawn before, so the RQ2 rows do not depend on them.
+        try:
+            from picopast.reconstruct import BANDS, load_viirs
+
+            real = load_viirs(cfg, "snpp", start)
+            d |= {f"r{b}": real[f"rrs{b}"].ravel()[idx] for b in BANDS}
+        except ValueError:  # no SNPP 8-day file for this period (archive gap)
+            d |= {f"r{b}": np.full(idx.size, np.nan, np.float32) for b in VIIRS_BANDS["snpp"]}
         df = pd.DataFrame(d)
         for g in GROUPS:
             df[g] = to_target(g, cells[g].ravel()[idx]).astype(np.float32)

@@ -17,7 +17,7 @@ results are reported as associations, not causes.
 ```bash
 uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
-.venv/bin/python -m pytest          # 52 tests, no network
+.venv/bin/python -m pytest          # 55 tests, no network
 ```
 
 NASA downloads need a free Earthdata account (<https://urs.earthdata.nasa.gov>).
@@ -108,8 +108,12 @@ PACE spectrum; the larger loss, for the cyanobacteria, comes from the change of
 sensor itself ([docs/reports/rq2_information.md](docs/reports/rq2_information.md),
 [docs/reports/virtual_viirs.md](docs/reports/virtual_viirs.md)).
 
-Not done yet: Route B, mixed-layer depth (Copernicus account), pixel-level
-climate maps. See
+RQ3: on real VIIRS the direct route (A) beats the two-step route (B: rebuild
+the PACE spectrum, then MOANA) for every group, and the SST + PAR route (C)
+does no better than climatology ([docs/reports/route_b.md](docs/reports/route_b.md)).
+
+Not done yet: mixed-layer depth (Copernicus account), pixel-level climate maps,
+the MLP version of Route A. See
 [docs/open_items.md](docs/open_items.md).
 
 ## Rules we hold ourselves to

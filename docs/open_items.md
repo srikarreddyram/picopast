@@ -199,6 +199,18 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+26. **RQ3 complete: Route B (17 November; `docs/reports/route_b.md`).** An MLP
+    rebuilds the PACE spectrum (400–680 nm, 12 principal components) from
+    the five bands; MOANA runs on it. The rebuild is accurate (median error
+    under 1% at 400–550 nm, 5–10% at 620–660 nm). Trained on virtual bands
+    only, it fails on real VIIRS (Synechococcus skill −0.59 to −0.91): MOANA
+    amplifies the small virtual-vs-real band differences. Trained on real
+    VIIRS bands paired with PACE spectra (the PRD's intent) it beats
+    climatology for every group (picoeukaryotes 0.28 / 0.32,
+    Synechococcus 0.06 / 0.10, Prochlorococcus 0.06 / 0.11; spatial /
+    temporal) but stays below Route A (0.39, 0.20 / 0.11, 0.18). Ranking on
+    real VIIRS: **A > B > C**, C no better than climatology. The PRD's
+    hypothesis (direct learning matches or beats the others) holds.
 25. **RQ2 (17 November; `docs/reports/rq2_information.md`).** Identical models
     reproduce MOANA from the full PACE spectrum or from the same spectrum
     through SNPP's five bands (~590,000 pixels, 118 periods). LightGBM skill

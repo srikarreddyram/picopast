@@ -140,6 +140,12 @@ def _rq2(args):
     print(rq2.report(load_config(args.config)).read_text())
 
 
+def _route_b(args):
+    from picopast import route_b
+
+    print(route_b.report(load_config(args.config)).read_text())
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="picopast", description=__doc__)
     p.add_argument("--config", default=None, help="path to picopast.yaml (default: config/)")
@@ -198,6 +204,9 @@ def main(argv=None):
     sub.add_parser(
         "virtual-viirs-check", help="PACE spectra through VIIRS band responses vs real same-day VIIRS"
     ).set_defaults(func=_virtual_viirs_check)
+
+    sub.add_parser("route-b", help="Route B: rebuild a PACE spectrum from VIIRS bands, then MOANA").set_defaults(
+        func=_route_b)
 
     sub.add_parser("rq2", help="RQ2: full PACE spectra vs virtual VIIRS bands, same models").set_defaults(func=_rq2)
 

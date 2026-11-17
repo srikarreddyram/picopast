@@ -59,3 +59,26 @@ def test_usable_pixels_needs_zero_flags_and_nasa_range():
              "peuk": np.array([1e3, 1e3, 1e3, 1e3, 5e4])}
     flags = np.array([0, 1, 2, 0, 0], np.uint8)  # flag 1 = negative Pro, 2 = missing Rrs
     assert usable_pixels(flags, cells, rng).tolist() == [True, False, False, False, False]
+
+
+def test_fold_ids_shared_between_tables():
+    from picopast.route_b import fold_ids
+
+    lat_a, lon_a = np.array([1.0, 1.5, 9.0, 21.0]), np.array([51.0, 51.5, 70.0, 90.0])
+    lat_b, lon_b = np.array([1.2, 9.9, 21.5]), np.array([51.2, 70.5, 90.5])
+    fa, fb = fold_ids(lat_a, lon_a, lat_b, lon_b, n_folds=3)
+    assert fa[0] == fa[1] == fb[0]  # same 2-degree block, same fold in both tables
+    assert fa[2] == fb[1] and fa[3] == fb[2]
+
+
+def test_spectrum_rebuilder_recovers_simple_spectra():
+    from picopast.route_b import SpectrumRebuilder
+
+    rng = np.random.default_rng(0)
+    wl = np.linspace(400, 680, 60)
+    a = rng.uniform(0.5, 2.0, 3000)  # one hidden parameter controls each spectrum's shape
+    spectra = 0.004 * np.exp(-((wl[None, :] - 450 - 40 * a[:, None]) / 120) ** 2)
+    idx = [np.argmin(abs(wl - w)) for w in (410, 443, 486, 551, 671)]
+    rb = SpectrumRebuilder().fit(spectra[:2500, idx], spectra[:2500])
+    err = np.median(np.abs(rb.predict(spectra[2500:, idx]) - spectra[2500:]) / spectra[2500:])
+    assert err < 0.05

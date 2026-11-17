@@ -103,8 +103,13 @@ same on NOAA-20) and lower during marine heatwaves (−0.25 to −0.36 SD); most
 of each association survives a model without SST
 ([docs/reports/climate.md](docs/reports/climate.md)).
 
-Not done yet: Route B and virtual VIIRS (need the response tables), mixed-layer
-depth (Copernicus account), pixel-level climate maps. See
+RQ2: the five VIIRS bands cost every group about 0.15 of skill against the full
+PACE spectrum; the larger loss, for the cyanobacteria, comes from the change of
+sensor itself ([docs/reports/rq2_information.md](docs/reports/rq2_information.md),
+[docs/reports/virtual_viirs.md](docs/reports/virtual_viirs.md)).
+
+Not done yet: Route B, mixed-layer depth (Copernicus account), pixel-level
+climate maps. See
 [docs/open_items.md](docs/open_items.md).
 
 ## Rules we hold ourselves to

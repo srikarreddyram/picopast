@@ -199,6 +199,20 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+25. **RQ2 (17 November; `docs/reports/rq2_information.md`).** Identical models
+    reproduce MOANA from the full PACE spectrum or from the same spectrum
+    through SNPP's five bands (~590,000 pixels, 118 periods). LightGBM skill
+    against a seasonal climatology: full 0.71–0.77, virtual VIIRS 0.56–0.64;
+    the bands cost 0.13–0.18 for every group. In rank terms Synechococcus
+    loses most (temporal ρ 0.96 → 0.83, others 0.98 → 0.93 and 0.96 → 0.92):
+    the PRD's hypothesis holds for ranks, not for skill.
+    **Most of the PACE-to-VIIRS loss is not the bands but the sensor
+    mismatch** (overpass time, cloud sampling within the 8-day composite,
+    calibration, atmospheric correction): real VIIRS skill is 0.39 for
+    picoeukaryotes (mismatch costs 0.17) but 0.11–0.20 for the cyanobacteria
+    (mismatch costs 0.39–0.49). Their MOANA signal lives in spectral detail
+    that does not survive a change of sensor, consistent with items 17, 20
+    and 21. Run: 80 min, 5.7 GB peak memory.
 24. **Virtual VIIRS vs real VIIRS (17 November, January 2025, 29 days, ~1.3
     million same-day pixel pairs per sensor; `docs/reports/virtual_viirs.md`).**
     Blue-green bands within ±3% (r 0.87–0.97); the blue/green ratio behind

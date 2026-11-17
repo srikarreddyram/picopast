@@ -74,11 +74,15 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
    terms. We default to the operational table and can run both.
 9. **PACE Rrs collection name.** In version 3.2 the hyperspectral Rrs is in
    `PACE_OCI_L3M_AOP`; there is no `PACE_OCI_L3M_RRS` collection in CMR.
-10. **The RSR table link in the PRD is dead.**
-    `oceancolor.gsfc.nasa.gov/resources/docs/rsr_tables` now redirects to a
-    general NASA page. The VIIRS SNPP and NOAA-20 response tables need a new
-    source before week 4 (virtual VIIRS). `picopast.virtual_viirs` takes any
-    table of wavelength by band.
+10. **The RSR table link in the PRD is dead; replaced (17 November).**
+    `oceancolor.gsfc.nasa.gov/resources/docs/rsr_tables` redirects to a
+    general NASA page. The band-averaged M1–M5 responses now come from NOAA's
+    calibration centre (`picopast.ingest.rsr`, cached in `data/raw/rsr`):
+    SNPP from Northrop Grumman's October 2011 fused release (used in IDPS),
+    NOAA-20 from the DAWG at-launch public release V2.1. Response-weighted
+    centres: SNPP 412.6/444.4/487.2/550.8/670.3 nm, NOAA-20
+    411.4/445.0/488.9/556.6/667.3 nm, matching NASA's band labels (SNPP M1 is
+    labelled 410 but centres near 412.6); widths 15–20 nm.
 11. **DMI lags.** NOAA PSL's HadISST-based Dipole Mode Index currently ends in
     May 2026. The last months of the record will have no DMI unless another
     source is chosen.

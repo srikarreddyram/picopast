@@ -9,7 +9,7 @@ PACE and VIIRS differ in calibration and overpass time. The PRD therefore
 requires the residual against real same-day VIIRS pixels to be measured and
 documented; ``residual_summary`` does that.
 
-The RSR tables themselves are not shipped yet: see docs/open_items.md.
+RSR tables: picopast.ingest.rsr.load_rsr (NOAA NCC releases, cached under data/raw/rsr).
 """
 
 from __future__ import annotations

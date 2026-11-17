@@ -93,3 +93,23 @@ def test_merge_ranges():
     spans = [(100, 200), (0, 50), (205, 300), (1000, 1100)]
     assert _merge_ranges(spans, max_gap=10) == [(0, 50), (100, 300), (1000, 1100)]
     assert _merge_ranges(spans, max_gap=0) == [(0, 50), (100, 200), (205, 300), (1000, 1100)]
+
+
+def test_rsr_parsing_both_release_formats():
+    import io
+    import zipfile
+
+    from picopast.ingest.rsr import SOURCES, centre_wavelength, parse_rsr_text, table_from_zip
+
+    ng = "    440.000    0.0000\n    445.000    1.0000\n    450.000    0.0000\n"
+    dawg = "%DAWG header\n%Band wvl_nm RSR\n   M2  440.0  0.1E-09\n   M2  445.0  0.5\n   M2  450.0  0.0\n"
+    w, r = parse_rsr_text(dawg)
+    assert w.tolist() == [440.0, 445.0, 450.0] and r[1] == 0.5
+    for sensor, text in (("snpp", ng), ("noaa20", dawg)):
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as z:
+            for n in range(1, 6):
+                z.writestr(SOURCES[sensor]["member"].format(n=n), text)
+        t = table_from_zip(buf.getvalue(), sensor)
+        assert t.shape[1] == 5 and t.max().tolist() == [1.0] * 5  # peak-normalised
+        assert centre_wavelength(t).iloc[0] == pytest.approx(445.0, abs=0.05)

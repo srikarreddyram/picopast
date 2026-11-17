@@ -17,7 +17,7 @@ results are reported as associations, not causes.
 ```bash
 uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
-.venv/bin/python -m pytest          # 48 tests, no network
+.venv/bin/python -m pytest          # 52 tests, no network
 ```
 
 NASA downloads need a free Earthdata account (<https://urs.earthdata.nasa.gov>).
@@ -97,8 +97,14 @@ picoeukaryotes and better than MOANA's cyanobacteria
 In progress: daily PACE for the whole PACE era (8-day PACE, CMC SST and VIIRS
 SNPP 8-day 2012–2026 are complete).
 
+Climate associations (RQ5, first pass): the picoeukaryote index has no
+2012–2025 trend, is lower after El Niño and positive IOD (r ≈ −0.55 to −0.6,
+same on NOAA-20) and lower during marine heatwaves (−0.25 to −0.36 SD); most
+of each association survives a model without SST
+([docs/reports/climate.md](docs/reports/climate.md)).
+
 Not done yet: Route B and virtual VIIRS (need the response tables), mixed-layer
-depth (Copernicus account), climate analysis (RQ5). See
+depth (Copernicus account), pixel-level climate maps. See
 [docs/open_items.md](docs/open_items.md).
 
 ## Rules we hold ourselves to

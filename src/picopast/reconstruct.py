@@ -393,6 +393,9 @@ def regional_series(cfg: Config, sensor: str = "snpp") -> pd.DataFrame:
                         vals = sub[g].values
                         row[g] = float(np.nanmean(vals)) if np.isfinite(vals).any() else np.nan
                         row[f"{g}_n"] = int(np.isfinite(vals).sum())
-                        row[f"{g}_n_out"] = int((sub[f"{g}_out_of_range"].values[np.isfinite(vals)] > 0).sum())
+                        in_range = np.isfinite(vals) & (sub[f"{g}_out_of_range"].values == 0)
+                        row[f"{g}_n_out"] = int(row[f"{g}_n"] - in_range.sum())
+                        # "reliable pixels" (PRD RQ5): every input inside the range seen in training
+                        row[f"{g}_reliable"] = float(vals[in_range].mean()) if in_range.any() else np.nan
                 rows.append(row)
     return pd.DataFrame(rows)

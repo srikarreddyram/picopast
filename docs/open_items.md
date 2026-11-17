@@ -195,6 +195,25 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+23. **RQ5, first pass (17 November).** `picopast climate`, SNPP record,
+    reliable pixels only (`docs/reports/climate.md`). Picoeukaryotes:
+    - **No trend** 2012–2025 (study box −0.02 SD/decade, p = 1.0).
+    - **ENSO and IOD:** lower after El Niño and positive IOD (study box r =
+      −0.59 with ONI at lag 0, −0.55 with DMI at lag 2; FDR p < 0.01;
+      effective n 40–57). NOAA-20 alone over 2018–2026 gives the same
+      (−0.53, −0.62). ONI and DMI co-vary, so the two cannot be separated.
+    - **Marine heatwaves:** 0.25–0.36 SD lower during heatwave periods in
+      every region, intervals clear of zero.
+    - **The 2019 positive IOD on its own** is unremarkable (z −1.0 to +0.2).
+    - **SST is a model input, so the associations were rechecked with a model
+      trained without SST:** heatwave −0.18 to −0.25 SD, ONI r −0.52, DMI r
+      −0.47 in the study box. About three quarters of each association
+      survives on VIIRS optics alone.
+    - Synechococcus and Prochlorococcus show significant upward trends, but no
+      larger than SNPP's drift against NOAA-20 (+0.13 and +0.25 SD/decade):
+      not evidence of change in the ocean.
+    - Still to do: mixed-layer depth as a covariate (Copernicus account),
+      pixel-level composite maps, monsoon-phase composites.
 22. **PACE download complete (17 November, 12:52).** 922 daily and 118
     8-day box files: everything NASA's archive holds for 5 March 2024 to
     30 September 2026. NASA has no PACE L3M data yet for October 2026, so the

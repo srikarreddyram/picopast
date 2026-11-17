@@ -122,6 +122,12 @@ def _sensor_comparison(args):
     print(sensor_comparison.report(load_config(args.config)).read_text())
 
 
+def _climate(args):
+    from picopast import climate
+
+    print(climate.report(load_config(args.config)).read_text())
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="picopast", description=__doc__)
     p.add_argument("--config", default=None, help="path to picopast.yaml (default: config/)")
@@ -176,6 +182,8 @@ def main(argv=None):
     sub.add_parser(
         "sensor-comparison", help="RQ4: SNPP vs NOAA-20 back-extensions (run reconstruct for both first)"
     ).set_defaults(func=_sensor_comparison)
+
+    sub.add_parser("climate", help="RQ5: trends, IOD/ENSO lags, heatwave composites").set_defaults(func=_climate)
 
     c = sub.add_parser("reconstruct", help="back-extend MOANA to 2012 from VIIRS (all groups, tiered)")
     c.add_argument("--stage", default="all", choices=["all", "table", "validate", "apply", "report"])

@@ -27,16 +27,35 @@ from picopast.ingest import cmr
 REMOTE_READ_ABOVE_MB = 100.0
 
 
-def login(interactive: bool = True):
-    """Log in to Earthdata. Uses ~/.netrc if present, otherwise prompts and saves it."""
+def _netrc_has_earthdata() -> bool:
+    netrc = Path.home() / ".netrc"
+    return netrc.exists() and "urs.earthdata.nasa.gov" in netrc.read_text()
+
+
+def login(interactive: bool = True, attempts: int = 4):
+    """Log in to Earthdata. Uses ~/.netrc if present, otherwise prompts and saves it.
+
+    Logging in calls NASA's login server, so a network outage looks like a failed
+    login. With an entry in ~/.netrc, failures are retried with growing pauses
+    and then reported as a network or server problem, not as missing credentials.
+    """
+    import time
+
     import earthaccess
 
-    try:
-        auth = earthaccess.login(strategy="netrc")
-        if auth.authenticated:
-            return auth
-    except Exception:
-        pass
+    have_netrc = _netrc_has_earthdata()
+    for attempt in range(attempts if have_netrc else 1):
+        try:
+            auth = earthaccess.login(strategy="netrc")
+            if auth.authenticated:
+                return auth
+        except Exception:
+            pass
+        if have_netrc and attempt < attempts - 1:
+            time.sleep(15 * 2**attempt)
+    if have_netrc:
+        raise ConnectionError("Earthdata login failed although ~/.netrc has an entry: NASA's login server or "
+                              "the network is not answering. Try again later.")
     if not interactive:
         raise RuntimeError("No Earthdata credentials found. Run `picopast login` first.")
     return earthaccess.login(strategy="interactive", persist=True)

@@ -86,12 +86,19 @@ Prochlorococcus are exploratory). Route A beats a seasonal climatology on
 held-out blocks for every group (skill 0.39 picoeukaryotes, 0.20
 Synechococcus, 0.18 Prochlorococcus); the SST + PAR route does not. Details
 and bottlenecks in [docs/reports/reconstruction.md](docs/reports/reconstruction.md).
+An independent NOAA-20 copy (RQ4) agrees with SNPP for picoeukaryotes to
+within ±0.07 SD over 2018–2026; the two cyanobacteria records drift apart
+away from the training years
+([docs/reports/sensor_comparison.md](docs/reports/sensor_comparison.md)). A
+chlorophyll climatology matches the 1991–2005 counts about as well as MOANA
+picoeukaryotes and better than MOANA's cyanobacteria
+([docs/reports/chlorophyll_comparison.md](docs/reports/chlorophyll_comparison.md)).
 
 In progress: daily PACE for the whole PACE era (8-day PACE, CMC SST and VIIRS
 SNPP 8-day 2012–2026 are complete).
 
 Not done yet: Route B and virtual VIIRS (need the response tables), mixed-layer
-depth (Copernicus account), the NOAA-20 copy, climate analysis. See
+depth (Copernicus account), climate analysis (RQ5). See
 [docs/open_items.md](docs/open_items.md).
 
 ## Rules we hold ourselves to

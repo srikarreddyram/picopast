@@ -77,7 +77,7 @@ All groups:
 - **Short training record.** 115 periods over about 2.6 years. Extending to 2012 assumes the VIIRS-to-MOANA relation holds in other years; the out-of-range table tracks input shift, not a change in the relation.
 - **Monsoon cloud.** The per-period sample gives June–September 37% of training pixels, but only from the cloud-free parts of each scene; in the reconstruction 29% of study-box pixels have a value in the SW monsoon against 54% in other seasons. SW monsoon results are reported separately (PRD section 2.1).
 - **Missing inputs.** No mixed-layer depth yet (needs a Copernicus Marine account). Route B and the virtual-VIIRS step wait for the VIIRS response tables.
-- **Sensor drift.** SNPP over 2012–2026 is not yet checked against NOAA-20 (RQ4). Study-box index, 2023–25 mean minus 2012–14 mean (SD units): Prochlorococcus +0.17, Synechococcus +0.12, picoeukaryotes -0.14. Such a shift could be a real change (warming favours cyanobacteria over picoeukaryotes) or slow drift in SNPP's bands; until the NOAA-20 copy is compared, it is not reported as a trend.
+- **Sensor drift.** Study-box index, 2023–2025 mean minus 2012–2014 mean (SD units): Prochlorococcus +0.17, Synechococcus +0.12, picoeukaryotes -0.14. Whether such a shift is in the ocean or in one sensor is judged against the other VIIRS record in `docs/reports/sensor_comparison.md` (RQ4); nothing is called a trend before the RQ5 trend tests.
 
 Prochlorococcus (exploratory):
 

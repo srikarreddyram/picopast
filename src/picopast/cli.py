@@ -116,6 +116,12 @@ def _chl_comparison(args):
     print(fallback_run.chlorophyll_comparison(load_config(args.config)).read_text())
 
 
+def _sensor_comparison(args):
+    from picopast import sensor_comparison
+
+    print(sensor_comparison.report(load_config(args.config)).read_text())
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="picopast", description=__doc__)
     p.add_argument("--config", default=None, help="path to picopast.yaml (default: config/)")
@@ -166,6 +172,10 @@ def main(argv=None):
     sub.add_parser(
         "chl-comparison", help="check C with a chlorophyll climatology in place of MOANA (descriptive)"
     ).set_defaults(func=_chl_comparison)
+
+    sub.add_parser(
+        "sensor-comparison", help="RQ4: SNPP vs NOAA-20 back-extensions (run reconstruct for both first)"
+    ).set_defaults(func=_sensor_comparison)
 
     c = sub.add_parser("reconstruct", help="back-extend MOANA to 2012 from VIIRS (all groups, tiered)")
     c.add_argument("--stage", default="all", choices=["all", "table", "validate", "apply", "report"])

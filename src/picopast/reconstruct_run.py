@@ -159,16 +159,23 @@ def _out_of_range_by_year(series: pd.DataFrame) -> pd.DataFrame:
 
 
 def _shift_text(box_series: pd.DataFrame, finals: dict) -> str:
-    """Early-to-late change of the study-box index per group: a trend or sensor drift, not yet separable."""
+    """Change of the study-box index per group from the record's first three full years to its last three."""
     if not len(box_series):
         return ""
     d = box_series.set_index("time")
-    shift = {g: ((d[g] - finals[g]["index_mean"]) / finals[g]["index_sd"]) for g in GROUPS}
-    parts = [f"{NAMES[g]} {z['2023':'2025'].mean() - z['2012':'2014'].mean():+.2f}" for g, z in shift.items()]
-    return ("Study-box index, 2023–25 mean minus 2012–14 mean (SD units): " + ", ".join(parts) + ". Such a "
-            "shift could be a real change (warming favours cyanobacteria over "
-            "picoeukaryotes) or slow drift in SNPP's bands; until the NOAA-20 copy is compared, it is not "
-            "reported as a trend.")
+    counts = d.index.year.value_counts()
+    full = sorted(y for y, n in counts.items() if n >= 40)  # years with (nearly) all 46 periods
+    if len(full) < 6:
+        return ""
+    early, late = full[:3], full[-3:]
+    parts = []
+    for g in GROUPS:
+        z = (d[g] - finals[g]["index_mean"]) / finals[g]["index_sd"]
+        parts.append(f"{NAMES[g]} {z[str(late[0]):str(late[-1])].mean() - z[str(early[0]):str(early[-1])].mean():+.2f}")
+    return (f"Study-box index, {late[0]}–{late[-1]} mean minus {early[0]}–{early[-1]} mean (SD units): "
+            + ", ".join(parts) + ". Whether such a shift is in the ocean or in one sensor is judged against the "
+            "other VIIRS record in `docs/reports/sensor_comparison.md` (RQ4); nothing is called a trend before "
+            "the RQ5 trend tests.")
 
 
 def write_report(cfg, table, scores, finals, routes, series, sensor, mapping, tiers) -> Path:
@@ -263,8 +270,7 @@ def write_report(cfg, table, scores, finals, routes, series, sensor, mapping, ti
           "seasons. SW monsoon results are reported separately (PRD section 2.1).",
           "- **Missing inputs.** No mixed-layer depth yet (needs a Copernicus Marine account). Route B and the "
           "virtual-VIIRS step wait for the VIIRS response tables.",
-          "- **Sensor drift.** SNPP over 2012–2026 is not yet checked against NOAA-20 (RQ4). " + _shift_text(
-              box_series, finals), "",
+          "- **Sensor drift.** " + _shift_text(box_series, finals), "",
           "Prochlorococcus (exploratory):", "",
           "- Check A *not supported* (12 matched station-days, one cruise); check C *inconclusive*.",
           ("- MOANA's Prochlorococcus is a linear fit made in the Atlantic. Of the PACE-era pixels where MOANA "

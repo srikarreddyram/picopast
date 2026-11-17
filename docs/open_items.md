@@ -176,8 +176,25 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       87–89%. Route C (SST + PAR) never beats climatology.
     - **Early-to-late shift, not yet a trend.** Study-box index, 2023–25 minus
       2012–14: picoeukaryotes −0.14 SD, Synechococcus +0.12, Prochlorococcus
-      +0.17, same sign in every region. Real change or SNPP band drift; the
-      NOAA-20 copy (RQ4) decides before anything is called a trend.
+      +0.17, same sign in every region. Item 21: only the picoeukaryote
+      decline is also seen by NOAA-20.
+21. **SNPP vs NOAA-20 (RQ4, 17 November).** NOAA-20 back-extended
+    independently (own bands, own models; 2018–2026, 402 periods; validation
+    as SNPP's: picoeukaryote skill 0.40 / 0.41). Report:
+    `docs/reports/sensor_comparison.md`.
+    - PRD agreement test (NOAA-20 median inside SNPP's 90% interval) passes
+      for all groups (98–100%), but it is lenient: the intervals carry each
+      model's error against MOANA. Typical gap between the two study-box
+      means: 0.02 SD (picoeukaryotes), 0.04 (Synechococcus), 0.10 (Pro).
+    - **Picoeukaryotes are sensor-independent:** the records stay within
+      ±0.07 SD of each other over 2018–2026, and both show a decline from
+      2018–20 to 2023–25 (SNPP −0.11, NOAA-20 −0.07 SD). A candidate signal
+      for the RQ5 trend tests, still a relative index.
+    - **Synechococcus and Prochlorococcus are not:** the two records agree in
+      the training years (by construction) and drift apart going back, with
+      a winter swing of up to 0.3 SD. Their older values depend on which
+      sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
+      Another reason they stay exploratory.
 20. **Does MOANA add to chlorophyll? (17 November, descriptive, after the
     gate.)** Check C rerun with a PACE-era VIIRS chlorophyll climatology in
     place of MOANA, same stations (`docs/reports/chlorophyll_comparison.md`).

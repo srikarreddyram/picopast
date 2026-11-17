@@ -195,6 +195,11 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+22. **PACE download complete (17 November, 12:52).** 922 daily and 118
+    8-day box files: everything NASA's archive holds for 5 March 2024 to
+    30 September 2026. NASA has no PACE L3M data yet for October 2026, so the
+    PACE era ends on 30 September in practice (config still says 31 October).
+    The 18 other missing days are archive gaps, the longest 25–29 May 2024.
 20. **Does MOANA add to chlorophyll? (17 November, descriptive, after the
     gate.)** Check C rerun with a PACE-era VIIRS chlorophyll climatology in
     place of MOANA, same stations (`docs/reports/chlorophyll_comparison.md`).

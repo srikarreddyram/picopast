@@ -199,6 +199,15 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+24. **Virtual VIIRS vs real VIIRS (17 November, January 2025, 29 days, ~1.3
+    million same-day pixel pairs per sensor; `docs/reports/virtual_viirs.md`).**
+    Blue-green bands within ±3% (r 0.87–0.97); the blue/green ratio behind
+    chlorophyll: bias −0.006 (SNPP) and +0.026 (NOAA-20), r 0.93–0.94. Two
+    outliers, documented, not corrected: the red band reads +16% to +34% in
+    relative terms on tiny values (~0.0001 sr⁻¹), and **NOAA-20's 411 nm band
+    reads about 17% below PACE and SNPP** (virtual − real +25%), an offset in
+    NOAA-20's own L3m product. Each sensor has its own models, so a constant
+    offset is learned; a drifting one would not be.
 23. **RQ5, first pass (17 November).** `picopast climate`, SNPP record,
     reliable pixels only (`docs/reports/climate.md`). Picoeukaryotes:
     - **No trend** 2012–2025 (study box −0.02 SD/decade, p = 1.0).

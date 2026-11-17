@@ -43,7 +43,10 @@ import xarray as xr
 from picopast.config import Config
 
 GROUPS = ("pro", "syn", "peuk")
-BANDS = (410, 443, 486, 551, 671)
+BANDS = (410, 443, 486, 551, 671)  # feature names follow SNPP's band centres (nm)
+# Each sensor's own bands, in the same order. NOAA-20's sit a few nm away from SNPP's;
+# each sensor gets its own models (PRD: the two reconstructions are built independently).
+SENSOR_BANDS = {"snpp": BANDS, "noaa20": (411, 445, 489, 556, 667)}
 PREFIX = {"snpp": "SNPP_VIIRS", "noaa20": "JPSS1_VIIRS"}
 FEATURES = {
     "A": [f"rrs{b}" for b in BANDS] + ["r443_551", "r486_551", "r410_443", "r671_551", "mbr",
@@ -87,7 +90,7 @@ def viirs_periods(cfg: Config, sensor: str = "snpp") -> pd.DataFrame:
         have.setdefault(_PERIOD.search(path.name).group(1), set()).add("par")
     for path in (raw / f"viirs_{sensor}_rrs").glob(f"{prefix}.*.L3m.8D.RRS.Rrs_*.4km.box.nc"):
         have.setdefault(_PERIOD.search(path.name).group(1), set()).add(path.name.split("Rrs_")[1][:3])
-    need = {"par"} | {str(b) for b in BANDS}
+    need = {"par"} | {str(b) for b in SENSOR_BANDS[sensor]}
     rows = []
     for path in (raw / f"viirs_{sensor}_par").glob(f"{prefix}.*.L3m.8D.PAR.par.4km.box.nc"):
         m = _PERIOD.search(path.name)
@@ -100,10 +103,10 @@ def load_viirs(cfg: Config, sensor: str, start: pd.Timestamp) -> dict[str, np.nd
     """The five Rrs bands and PAR of one 8-day period on the analysis grid (float32)."""
     raw, prefix, stamp = cfg.path("raw"), PREFIX[sensor], start.strftime("%Y%m%d")
     out = {}
-    for b in BANDS:
+    for name, b in zip(BANDS, SENSOR_BANDS[sensor]):
         (path,) = (raw / f"viirs_{sensor}_rrs").glob(f"{prefix}.{stamp}_*.L3m.8D.RRS.Rrs_{b}.4km.box.nc")
         with xr.open_dataset(path) as ds:
-            out[f"rrs{b}"] = ds[f"Rrs_{b}"].values.astype(np.float32)
+            out[f"rrs{name}"] = ds[f"Rrs_{b}"].values.astype(np.float32)
     (path,) = (raw / f"viirs_{sensor}_par").glob(f"{prefix}.{stamp}_*.L3m.8D.PAR.par.4km.box.nc")
     with xr.open_dataset(path) as ds:
         out["par"] = ds["par"].values.astype(np.float32)

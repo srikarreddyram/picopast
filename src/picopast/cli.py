@@ -106,8 +106,14 @@ def _reconstruct(args):
     from picopast import reconstruct_run
 
     stages = ("table", "validate", "apply", "report") if args.stage == "all" else (args.stage,)
-    out = reconstruct_run.run(load_config(args.config), stages=stages, refresh=args.refresh)
+    out = reconstruct_run.run(load_config(args.config), stages=stages, refresh=args.refresh, sensor=args.sensor)
     print(out.read_text() if out.suffix == ".md" else f"wrote {out}")
+
+
+def _chl_comparison(args):
+    from picopast import fallback_run
+
+    print(fallback_run.chlorophyll_comparison(load_config(args.config)).read_text())
 
 
 def main(argv=None):
@@ -157,8 +163,13 @@ def main(argv=None):
         "fallback-checks", help="pre-registered fallback checks A, B and C"
     ).set_defaults(func=_fallback_checks)
 
+    sub.add_parser(
+        "chl-comparison", help="check C with a chlorophyll climatology in place of MOANA (descriptive)"
+    ).set_defaults(func=_chl_comparison)
+
     c = sub.add_parser("reconstruct", help="back-extend MOANA to 2012 from VIIRS (all groups, tiered)")
     c.add_argument("--stage", default="all", choices=["all", "table", "validate", "apply", "report"])
+    c.add_argument("--sensor", default=None, choices=["snpp", "noaa20"], help="default: config reconstruction.sensor")
     c.add_argument("--refresh", action="store_true", help="redo cached stages")
     c.set_defaults(func=_reconstruct)
 

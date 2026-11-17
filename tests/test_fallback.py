@@ -126,3 +126,17 @@ def test_decision_follows_preregistered_rule():
     # Prochlorococcus needs A as well as C.
     assert not decision({**v, ("A", "pro"): "not supported"})["pro"][0]
     assert not decision({k: x for k, x in v.items() if k != ("A", "pro")})["pro"][0]
+
+
+def test_paired_difference_and_partial():
+    from picopast.fallback import paired_spearman_difference, partial_spearman
+
+    rng = np.random.default_rng(1)
+    z = rng.normal(size=300)                 # shared driver ("chlorophyll")
+    a = z + rng.normal(scale=0.3, size=300)  # "MOANA": z plus its own signal
+    extra = rng.normal(size=300)
+    y = z + 0.8 * extra                       # counts depend on z and on something else
+    a_extra = a + 0.8 * extra
+    d = paired_spearman_difference(a_extra, z, y, np.repeat(np.arange(30), 10), n_boot=300)
+    assert d["diff"] > 0 and d["diff_lo"] > 0 and d["partial"] > 0.3
+    assert abs(partial_spearman(a, y, z)) < 0.15  # a adds nothing beyond z here

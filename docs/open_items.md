@@ -178,6 +178,17 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       2012–14: picoeukaryotes −0.14 SD, Synechococcus +0.12, Prochlorococcus
       +0.17, same sign in every region. Real change or SNPP band drift; the
       NOAA-20 copy (RQ4) decides before anything is called a trend.
+20. **Does MOANA add to chlorophyll? (17 November, descriptive, after the
+    gate.)** Check C rerun with a PACE-era VIIRS chlorophyll climatology in
+    place of MOANA, same stations (`docs/reports/chlorophyll_comparison.md`).
+    Picoeukaryotes: MOANA ρ 0.52, chlorophyll 0.47, difference +0.05
+    [−0.08, +0.14]; partial ρ of MOANA given chlorophyll 0.25 [−0.01, 0.45], a
+    hint of added information, not established. Synechococcus: chlorophyll
+    does better (0.35 vs 0.19, difference −0.17 [−0.49, −0.03]).
+    Prochlorococcus: low chlorophyll does far better (|ρ| 0.43 vs 0.07,
+    difference −0.35 [−0.73, −0.11]); MOANA adds nothing (partial −0.01). For
+    the paper: at the level of 1991–2005 patterns, MOANA's picoeukaryote index
+    is about as good as chlorophyll and the cyanobacteria are worse. Say so.
 19. **SNPP 8-day record in 2026 stops at 28 August** in NASA's archive (plus
     one period, 22–29 September). The training overlap therefore ends there;
     NOAA-20 has 34 periods in 2026.

@@ -41,6 +41,42 @@ def spearman_bootstrap(x, y, cluster, n_boot: int = 2000, ci: float = 0.95, seed
             "n_clusters": int(labels.size)}
 
 
+def partial_spearman(x, y, z) -> float:
+    """Rank correlation of x and y with z held fixed (partial correlation of the ranks)."""
+    rxy, rxz, ryz = _rho(x, y), _rho(x, z), _rho(y, z)
+    return float((rxy - rxz * ryz) / np.sqrt((1 - rxz**2) * (1 - ryz**2)))
+
+
+def paired_spearman_difference(a, b, y, cluster, n_boot: int = 2000, ci: float = 0.95, seed: int = 0) -> dict:
+    """rho(a, y) - rho(b, y) on the same points, with an interval from resampling whole clusters.
+
+    Also gives the partial rank correlation of a and y with b held fixed: what ``a``
+    tells about ``y`` beyond ``b``.
+    """
+    a, b, y, cluster = np.asarray(a, float), np.asarray(b, float), np.asarray(y, float), np.asarray(cluster)
+    ok = np.isfinite(a) & np.isfinite(b) & np.isfinite(y)
+    a, b, y, cluster = a[ok], b[ok], y[ok], cluster[ok]
+    labels = np.unique(cluster)
+    members = [np.flatnonzero(cluster == c) for c in labels]
+    rng = np.random.default_rng(seed)
+    diff, part = [], []
+    for _ in range(n_boot if labels.size > 1 else 0):
+        idx = np.concatenate([members[i] for i in rng.integers(0, labels.size, labels.size)])
+        diff.append(_rho(a[idx], y[idx]) - _rho(b[idx], y[idx]))
+        part.append(partial_spearman(a[idx], y[idx], b[idx]))
+    q = [(1 - ci) / 2 * 100, (1 + ci) / 2 * 100]
+
+    def interval(d):
+        d = np.asarray(d, float)
+        d = d[np.isfinite(d)]
+        return np.percentile(d, q) if d.size else (np.nan, np.nan)
+
+    (dlo, dhi), (plo, phi) = interval(diff), interval(part)
+    return {"rho_a": _rho(a, y), "rho_b": _rho(b, y), "diff": _rho(a, y) - _rho(b, y), "diff_lo": float(dlo),
+            "diff_hi": float(dhi), "partial": partial_spearman(a, y, b), "partial_lo": float(plo),
+            "partial_hi": float(phi), "n": int(y.size), "n_clusters": int(labels.size)}
+
+
 def pigment_proxy_verdict(stats: dict, rule: dict) -> tuple[str, list[str]]:
     """Check A: MOANA Prochlorococcus vs HPLC divinyl chlorophyll a."""
     reasons = []

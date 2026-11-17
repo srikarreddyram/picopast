@@ -214,6 +214,89 @@ def check_c(cfg: Config, mapping: str = "operational") -> dict:
     return res
 
 
+def _chl_monthly_climatology(cfg: Config, like: xr.DataArray, offshore: np.ndarray) -> xr.DataArray:
+    """PACE-era VIIRS SNPP chlorophyll climatology by calendar month: mean log10(chl), offshore pixels.
+
+    Periods are grouped by the month of their middle day, as the MOANA climatology is.
+    """
+    import re
+
+    pace = cfg["periods"]["pace"]
+    rx = re.compile(r"\.(\d{8})_(\d{8})\.L3m\.8D\.")
+    total, count = {}, {}
+    for path in sorted((cfg.path("raw") / "viirs_snpp_chl").glob("SNPP_VIIRS.*.L3m.8D.CHL.chlor_a.4km.box.nc")):
+        a, b = (pd.Timestamp(x) for x in rx.search(path.name).groups())
+        if a < pd.Timestamp(pace["start"]) or a > pd.Timestamp(pace["end"]):
+            continue
+        month = (a + (b - a) / 2).month
+        with xr.open_dataset(path) as ds:
+            chl = ds["chlor_a"].values.astype(np.float64)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            v = np.where((chl > 0) & offshore, np.log10(chl), np.nan)
+        total[month] = total.get(month, 0) + np.nan_to_num(v)
+        count[month] = count.get(month, 0) + np.isfinite(v)
+    if not total:
+        raise FileNotFoundError("no PACE-era VIIRS SNPP 8-day chlorophyll; fetch viirs_snpp_chl --period 8D")
+    months = sorted(total)
+    with np.errstate(invalid="ignore"):
+        data = np.stack([np.where(count[m] > 0, total[m] / count[m], np.nan) for m in months])
+    return xr.DataArray(data, dims=("month", "lat", "lon"),
+                        coords={"month": months, "lat": like["lat"].values, "lon": like["lon"].values})
+
+
+def chlorophyll_comparison(cfg: Config, mapping: str = "operational") -> Path:
+    """Does MOANA tell more about the 1991-2005 counts than chlorophyll alone? (descriptive, not a verdict)
+
+    Same stations, same-month matching and same 3x3 rule as check C; a same-month
+    VIIRS chlorophyll climatology replaces the MOANA one. Reported: rho for each,
+    their difference and the partial rank correlation of MOANA with chlorophyll
+    held fixed, with intervals from resampling whole cruises.
+    """
+    from picopast.fallback import paired_spearman_difference
+
+    c = check_c(cfg, mapping)
+    clim, offshore = _monthly_climatology(cfg, mapping)
+    chl = _chl_monthly_climatology(cfg, clim["peuk"], offshore)
+    field = chl.rename(month="time").assign_coords(
+        time=pd.to_datetime([f"2000-{int(m):02d}-01" for m in chl["month"].values]))
+    m_cfg = cfg["matchup"]
+    L = ["# Does MOANA add to chlorophyll? Check C with a chlorophyll climatology", "",
+         f"Generated {date.today().isoformat()} by `picopast chl-comparison` ({mapping} mapping). Descriptive, added "
+         "17 November 2026 after the trust-gate verdicts; it does not change them. Same stations, same-month "
+         "matching and same 3×3 rule as check C, with a PACE-era VIIRS SNPP chlorophyll climatology (mean "
+         "log10 chlorophyll by calendar month) in place of MOANA. Intervals: 95%, resampling whole cruises; "
+         "only stations matched by both are used.", "",
+         "| group | stations | cruises | ρ MOANA | ρ chlorophyll | MOANA − chlorophyll | partial ρ, MOANA given chlorophyll |",
+         "| --- | --- | --- | --- | --- | --- | --- |"]
+    notes: list[str] = []
+    for g, r in c["groups"].items():
+        m = r["matchups"]
+        base = m.drop(columns=[k for k in ("sat_value", "sat_n_valid", "sat_day_offset") if k in m])
+        with_chl = match(base, field, m_cfg["window_px"], m_cfg["min_valid_px"], (0,))
+        d = paired_spearman_difference(m["sat_value"].values, with_chl["sat_value"].values,
+                                       m[f"{g}_cells_ml"].values, m["cruise"].values,
+                                       n_boot=cfg["trust_gate"]["n_bootstrap"])
+        L.append(f"| {_NAMES[g]} | {d['n']} | {d['n_clusters']} | {d['rho_a']:.2f} | {d['rho_b']:.2f} | "
+                 f"{d['diff']:+.2f} [{d['diff_lo']:+.2f}, {d['diff_hi']:+.2f}] | "
+                 f"{d['partial']:.2f} [{d['partial_lo']:.2f}, {d['partial_hi']:.2f}] |")
+        if d["rho_b"] < 0:  # e.g. Prochlorococcus: abundant where water is clear and chlorophyll low
+            inv = paired_spearman_difference(m["sat_value"].values, -with_chl["sat_value"].values,
+                                             m[f"{g}_cells_ml"].values, m["cruise"].values,
+                                             n_boot=cfg["trust_gate"]["n_bootstrap"])
+            notes.append(f"- {_NAMES[g]}: counts fall as chlorophyll rises (ρ {d['rho_b']:.2f}), so the fair "
+                         f"baseline is *low* chlorophyll. Against it, MOANA − baseline = {inv['diff']:+.2f} "
+                         f"[{inv['diff_lo']:+.2f}, {inv['diff_hi']:+.2f}]: low chlorophyll alone ranks the "
+                         f"stations {'better' if inv['diff_hi'] < 0 else 'as well or better'}. The partial ρ "
+                         "does not depend on the baseline's sign.")
+    L += [""] + notes + (["" ] if notes else [])
+    L += ["Reading: a difference interval above zero means MOANA ranks the stations better than chlorophyll "
+          "does; a partial ρ interval above zero means MOANA carries information about the counts that "
+          "chlorophyll does not. Counts are 1991–2005; the climatologies are 2024–2026.", ""]
+    out = cfg.path("reports") / "chlorophyll_comparison.md"
+    out.write_text("\n".join(L))
+    return out
+
+
 def _fmt(s: dict) -> str:
     return f"ρ = {s['rho']:.2f} [{s['lo']:.2f}, {s['hi']:.2f}], n = {s['n']}"
 

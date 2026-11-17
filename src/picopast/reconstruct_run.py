@@ -29,6 +29,12 @@ from picopast.reconstruct import (
 )
 
 NAMES = {"pro": "Prochlorococcus", "syn": "Synechococcus", "peuk": "picoeukaryotes"}
+_LABEL = {"snpp": "SNPP", "noaa20": "NOAA-20"}
+
+
+def _suffix(sensor: str) -> str:
+    """SNPP is the main record (reconstruction.md); other sensors get their own report."""
+    return "" if sensor == "snpp" else f"_{sensor}"
 
 
 def _season(cfg: Config, month: int) -> str:
@@ -42,9 +48,10 @@ def choose_route(scores: pd.DataFrame) -> tuple[str, bool]:
     return route, bool(s[route] > 0)
 
 
-def run(cfg: Config, stages=("table", "validate", "apply", "report"), refresh: bool = False) -> Path:
+def run(cfg: Config, stages=("table", "validate", "apply", "report"), refresh: bool = False,
+        sensor: str | None = None) -> Path:
     rc = cfg["reconstruction"]
-    sensor, mapping, tiers = rc["sensor"], rc["mapping"], rc["tiers"]
+    sensor, mapping, tiers = sensor or rc["sensor"], rc["mapping"], rc["tiers"]
     work = cfg.path("interim") / "reconstruct"
     work.mkdir(parents=True, exist_ok=True)
 
@@ -88,7 +95,8 @@ REGIONS = {"study_box": ("Study box", "#2a78d6"), "bay_of_bengal": ("Bay of Beng
            "arabian_sea_central_east": ("Arabian Sea C/E", "#1baf7a")}  # validated categorical slots 1-3
 
 
-def plot_series(series: pd.DataFrame, finals: dict, tiers: dict, train: tuple, out: Path) -> Path:
+def plot_series(series: pd.DataFrame, finals: dict, tiers: dict, train: tuple, out: Path,
+                sensor_label: str = "SNPP") -> Path:
     """Monthly regional means as a relative index, one panel per group; tier in each title."""
     import matplotlib
 
@@ -133,7 +141,8 @@ def plot_series(series: pd.DataFrame, finals: dict, tiers: dict, train: tuple, o
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper left", bbox_to_anchor=(0.01, 0.965), ncol=3, frameon=False, fontsize=8,
                labelcolor=ink)
-    fig.suptitle("Back-extension from VIIRS SNPP, monthly means of 8-day maps", x=0.01, ha="left", fontsize=11,
+    fig.suptitle(f"Back-extension from VIIRS {sensor_label}, monthly means of 8-day maps", x=0.01, ha="left",
+                 fontsize=11,
                  color=ink, y=0.995)
     fig.tight_layout(rect=(0, 0, 0.9, 0.95))
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -167,7 +176,7 @@ def write_report(cfg, table, scores, finals, routes, series, sensor, mapping, ti
     first, last = table["time"].min(), table["time"].max()
     L = ["# Back-extension to 2012: first attempt", "",
          f"Generated {date.today().isoformat()} by `picopast reconstruct`. Models learn MOANA ({mapping} mapping) "
-         f"from VIIRS {sensor.upper()} 8-day inputs in the PACE era and are applied to every VIIRS 8-day period on "
+         f"from VIIRS {_LABEL[sensor]} 8-day inputs in the PACE era and are applied to every VIIRS 8-day period on "
          "disk. They reproduce MOANA, so they can be no more right than MOANA is.", "",
          "## What each group's record is", "",
          "| group | tier | route used | beats climatology on held-out blocks |", "| --- | --- | --- | --- |"]
@@ -209,9 +218,9 @@ def write_report(cfg, table, scores, finals, routes, series, sensor, mapping, ti
               f"`data/products/reconstruction/{sensor}/8D/` (median, 5% and 95% per group, plus an out-of-range count).",
               "- Share of study-box pixels with a value, by season: " + ", ".join(
                   f"{s} {v:.0%}" for s, v in box.groupby("season")["valid_share"].mean().items()) + "."]
-        fig = plot_series(series, finals, tiers, (first, last + pd.Timedelta(days=7)),
-                          cfg.path("reports") / "figures" / "reconstruction_series.png")
-        L += ["", f"![Regional relative index, 2012–2026](figures/{fig.name})", "",
+        fig = plot_series(series, finals, tiers, (first, last + pd.Timedelta(days=7)), sensor_label=_LABEL[sensor],
+                          out=cfg.path("reports") / "figures" / f"reconstruction_series{_suffix(sensor)}.png")
+        L += ["", f"![Regional relative index, {yrs.min()}–{yrs.max()}](figures/{fig.name})", "",
               "Each line is a regional monthly mean of the 8-day medians, as a relative index "
               "((value − PACE-era mean) / PACE-era SD). The shaded span is the training period. The table view is "
               f"`data/products/reconstruction/{sensor}_8D_regional_means.csv`. Cloud makes June–September means "
@@ -276,6 +285,6 @@ def write_report(cfg, table, scores, finals, routes, series, sensor, mapping, ti
           "Picoeukaryotes (relative index):", "",
           "- Passed check C against 1991–2005 counts, a pattern check only: the record is a relative index, "
           "never cells/mL. MOANA picoeukaryotes follow chlorophyll; a chlorophyll-only comparison is still due.", ""]
-    out = cfg.path("reports") / "reconstruction.md"
+    out = cfg.path("reports") / f"reconstruction{_suffix(sensor)}.md"
     out.write_text("\n".join(L) + "\n")
     return out

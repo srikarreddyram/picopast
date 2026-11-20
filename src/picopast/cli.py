@@ -128,6 +128,12 @@ def _climate(args):
     print(climate.report(load_config(args.config)).read_text())
 
 
+def _climate_maps(args):
+    from picopast import climate_maps
+
+    print(climate_maps.report(load_config(args.config)).read_text())
+
+
 def _virtual_viirs_check(args):
     from picopast import virtual_viirs_run
 
@@ -211,6 +217,8 @@ def main(argv=None):
     sub.add_parser("rq2", help="RQ2: full PACE spectra vs virtual VIIRS bands, same models").set_defaults(func=_rq2)
 
     sub.add_parser("climate", help="RQ5: trends, IOD/ENSO lags, heatwave composites").set_defaults(func=_climate)
+    sub.add_parser("climate-maps", help="RQ5 per 0.25° cell: ENSO, IOD and heatwave composite maps").set_defaults(
+        func=_climate_maps)
 
     c = sub.add_parser("reconstruct", help="back-extend MOANA to 2012 from VIIRS (all groups, tiered)")
     c.add_argument("--stage", default="all", choices=["all", "table", "validate", "apply", "report"])

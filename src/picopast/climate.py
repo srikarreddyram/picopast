@@ -153,18 +153,15 @@ def heatwave_share(cfg: Config, periods: pd.DatetimeIndex) -> pd.DataFrame:
     return pd.DataFrame(rows, index=periods)
 
 
-def sst_free_series(cfg: Config, sensor: str = "snpp", group: str = "peuk") -> pd.DataFrame:
-    """Sensitivity: the group's regional record from a Route A model trained without SST.
+def sst_free_maps(cfg: Config, sensor: str = "snpp", group: str = "peuk"):
+    """Yield (period start, map in SD units) from a Route A model trained without SST, reliable pixels only.
 
     SST is a model input, so a heatwave or ENSO association could partly be put
     there by the model. This record sees only what VIIRS sees (bands, ratios, PAR,
-    position, season). Regional means on reliable pixels, as in the main record.
+    position, season), on the same pixels as the main record.
     """
     from picopast import reconstruct as R
 
-    out = cfg.path("interim") / "climate" / f"{group}_no_sst_{sensor}_regional.csv"
-    if out.exists():
-        return pd.read_csv(out, parse_dates=["time"])
     table = pd.read_parquet(cfg.path("interim") / "reconstruct" / f"training_{sensor}_operational.parquet")
     feats = [f for f in R.FEATURES["A"] if f != "sst"]
     d = table[np.isfinite(table[group])]
@@ -174,8 +171,7 @@ def sst_free_series(cfg: Config, sensor: str = "snpp", group: str = "peuk") -> p
     mean, sd = float(d[group].mean()), float(d[group].std())
     lat, lon, offshore = R._grid_and_offshore(cfg)
     lat2, lon2 = np.meshgrid(lat, lon, indexing="ij")
-    oisst, rows = R.Oisst(cfg, lat, lon), []
-    boxes = {"study_box": None} | {k: cfg["regions"][k] for k in REGIONS if k != "study_box"}
+    oisst = R.Oisst(cfg, lat, lon)
     for p in R.viirs_periods(cfg, sensor).itertuples():
         v = R.load_viirs(cfg, sensor, p.start)
         ok = R._inputs_valid(v, oisst.mean(p.start, p.end)) & offshore  # same pixels as the main record
@@ -185,13 +181,25 @@ def sst_free_series(cfg: Config, sensor: str = "snpp", group: str = "peuk") -> p
         reliable = np.ones(idx.size, bool)
         for f, (a, b) in ranges.items():
             reliable &= (X[f].values >= a) & (X[f].values <= b)
-        z = np.full(ok.size, np.nan)
+        z = np.full(ok.size, np.nan, np.float32)
         z[idx[reliable]] = (model.predict(X.loc[reliable, feats]) - mean) / sd
-        z = z.reshape(ok.shape)
+        yield p.start, z.reshape(ok.shape), lat, lon
+
+
+def sst_free_series(cfg: Config, sensor: str = "snpp", group: str = "peuk") -> pd.DataFrame:
+    """Regional means of the SST-free record (see sst_free_maps). Cached."""
+    out = cfg.path("interim") / "climate" / f"{group}_no_sst_{sensor}_regional.csv"
+    if out.exists():
+        return pd.read_csv(out, parse_dates=["time"])
+    boxes = {"study_box": None} | {k: cfg["regions"][k] for k in REGIONS if k != "study_box"}
+    rows, lat2 = [], None
+    for start, z, lat, lon in sst_free_maps(cfg, sensor, group):
+        if lat2 is None:
+            lat2, lon2 = np.meshgrid(lat, lon, indexing="ij")
         for name, r in boxes.items():
             sub = z if r is None else z[(lat2 >= r["lat_min"]) & (lat2 <= r["lat_max"])
                                         & (lon2 >= r["lon_min"]) & (lon2 <= r["lon_max"])]
-            rows.append({"time": p.start, "region": name,
+            rows.append({"time": start, "region": name,
                          group: float(np.nanmean(sub)) if np.isfinite(sub).any() else np.nan})
     df = pd.DataFrame(rows)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -395,7 +403,9 @@ def report(cfg: Config, sensor: str = "snpp") -> Path:
           "## Not yet done", "",
           "- Mixed-layer depth as a covariate (needs the Copernicus Marine account).",
           "- The same analysis on the NOAA-20 record for 2018–2026 (picoeukaryotes), as a sensor check.",
-          "- Pixel-level composites and maps; seasonal (monsoon-phase) composites beyond the climatology.", ""]
+          "- Seasonal (monsoon-phase) composites beyond the climatology.", "",
+          "Pixel-level maps of the ENSO, IOD and heatwave composites, with the SST-free check and a NOAA-20 "
+          "comparison: `climate_maps.md`.", ""]
     out = cfg.path("reports") / "climate.md"
     out.write_text("\n".join(L))
     return out

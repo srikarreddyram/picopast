@@ -94,14 +94,17 @@ chlorophyll climatology matches the 1991–2005 counts about as well as MOANA
 picoeukaryotes and better than MOANA's cyanobacteria
 ([docs/reports/chlorophyll_comparison.md](docs/reports/chlorophyll_comparison.md)).
 
-In progress: daily PACE for the whole PACE era (8-day PACE, CMC SST and VIIRS
-SNPP 8-day 2012–2026 are complete).
+All data are downloaded: PACE (daily and 8-day, to NASA's last file, 30 September
+2026), VIIRS SNPP and NOAA-20, CMC SST and OISST.
 
 Climate associations (RQ5, first pass): the picoeukaryote index has no
 2012–2025 trend, is lower after El Niño and positive IOD (r ≈ −0.55 to −0.6,
 same on NOAA-20) and lower during marine heatwaves (−0.25 to −0.36 SD); most
 of each association survives a model without SST
-([docs/reports/climate.md](docs/reports/climate.md)).
+([docs/reports/climate.md](docs/reports/climate.md)). Mapped per 0.25° cell, the
+El Niño and IOD drops sit in the Arabian Sea while most of the Bay of Bengal does
+not move; heatwave drops cover almost the whole region; both survive without SST
+and agree on NOAA-20 ([docs/reports/climate_maps.md](docs/reports/climate_maps.md)).
 
 RQ2: the five VIIRS bands cost every group about 0.15 of skill against the full
 PACE spectrum; the larger loss, for the cyanobacteria, comes from the change of
@@ -112,8 +115,8 @@ RQ3: on real VIIRS the direct route (A) beats the two-step route (B: rebuild
 the PACE spectrum, then MOANA) for every group, and the SST + PAR route (C)
 does no better than climatology ([docs/reports/route_b.md](docs/reports/route_b.md)).
 
-Not done yet: mixed-layer depth (Copernicus account), pixel-level climate maps,
-the MLP version of Route A. See
+Not done yet: mixed-layer depth (Copernicus account), the MLP version of
+Route A. See
 [docs/open_items.md](docs/open_items.md).
 
 ## Rules we hold ourselves to

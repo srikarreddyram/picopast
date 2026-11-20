@@ -1,6 +1,6 @@
 # Climate associations (RQ5): first pass
 
-Generated 2026-11-17 by `picopast climate`, from the VIIRS SNPP back-extension, reliable pixels only (every model input inside the range seen in training). Values are anomalies of the relative index in SD units. Associations, not causes. Only picoeukaryotes passed the trust gate and agree between the two VIIRS sensors; Synechococcus and Prochlorococcus rows are exploratory and shown for completeness.
+Generated 2026-11-20 by `picopast climate`, from the VIIRS SNPP back-extension, reliable pixels only (every model input inside the range seen in training). Values are anomalies of the relative index in SD units. Associations, not causes. Only picoeukaryotes passed the trust gate and agree between the two VIIRS sensors; Synechococcus and Prochlorococcus rows are exploratory and shown for completeness.
 
 ## Trends (core seasons, annual means)
 
@@ -91,4 +91,6 @@ Heatwave periods per region: Study box 42, Bay of Bengal 58, Arabian Sea C/E 93 
 
 - Mixed-layer depth as a covariate (needs the Copernicus Marine account).
 - The same analysis on the NOAA-20 record for 2018–2026 (picoeukaryotes), as a sensor check.
-- Pixel-level composites and maps; seasonal (monsoon-phase) composites beyond the climatology.
+- Seasonal (monsoon-phase) composites beyond the climatology.
+
+Pixel-level maps of the ENSO, IOD and heatwave composites, with the SST-free check and a NOAA-20 comparison: `climate_maps.md`.

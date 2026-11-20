@@ -199,6 +199,18 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+27. **RQ5 per 0.25° cell (20 November; `docs/reports/climate_maps.md`).**
+    `picopast climate-maps`: the reconstruction's reliable pixels averaged
+    into OISST cells, composites per cell with year-resampled intervals.
+    Picoeukaryotes: El Niño and positive IOD lower the index in the
+    Arabian Sea (5–15°N: −0.32 and −0.44 SD, 83–93% of cells clear) while
+    most of the Bay of Bengal does not move and its north rises slightly
+    (+0.11): the regional average hid a west–east split. Heatwaves lower it
+    almost everywhere (96% of cells clear; Bay of Bengal −0.25, Arabian Sea
+    −0.38). Checks: a model without SST keeps 71–74% of each signal with
+    the same pattern (r 0.98–0.99); NOAA-20 gives the same maps for
+    2018–2026 (pattern r 0.96–0.99). Cyanobacteria maps are exploratory:
+    their heatwave maps split north (higher) / south (lower).
 26. **RQ3 complete: Route B (17 November; `docs/reports/route_b.md`).** An MLP
     rebuilds the PACE spectrum (400–680 nm, 12 principal components) from
     the five bands; MOANA runs on it. The rebuild is accurate (median error

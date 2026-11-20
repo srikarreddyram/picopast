@@ -111,6 +111,13 @@ PACE spectrum; the larger loss, for the cyanobacteria, comes from the change of
 sensor itself ([docs/reports/rq2_information.md](docs/reports/rq2_information.md),
 [docs/reports/virtual_viirs.md](docs/reports/virtual_viirs.md)).
 
+Route D (cyanobacteria): MOANA, fitted to Atlantic cruises, does not rank the
+Indian Ocean stations for *Synechococcus* or *Prochlorococcus*. A model trained on
+ship counts from the rest of the world ocean (MAREDAT, Indian Ocean held out) and
+weighted towards this box's conditions does: ρ 0.50 and 0.45, both passing the
+same pre-registered test, and clearly better than MOANA; it is no better than
+chlorophyll alone ([docs/reports/route_d.md](docs/reports/route_d.md)).
+
 RQ3: on real VIIRS the direct route (A) beats the two-step route (B: rebuild
 the PACE spectrum, then MOANA) for every group, and the SST + PAR route (C)
 does no better than climatology ([docs/reports/route_b.md](docs/reports/route_b.md)).

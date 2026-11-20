@@ -185,26 +185,35 @@ def _monthly_climatology(cfg: Config, mapping: str, offshore: np.ndarray | None 
 
 def check_c(cfg: Config, mapping: str = "operational") -> dict:
     """Check C: same-calendar-month PACE-era MOANA climatology vs 1991-2005 surface counts, per group."""
-    from picopast.fallback import climatology_verdict
-
     out = _monthly_climatology(cfg, mapping)
     if out is None:
         raise FileNotFoundError(f"no {mapping} 8-day MOANA maps; run picopast moana-run --period 8D")
     clim, offshore = out
+    return {"mapping": mapping, **check_c_fields(cfg, clim, offshore)}
+
+
+def check_c_fields(cfg: Config, fields: dict[str, xr.DataArray], offshore: np.ndarray) -> dict:
+    """Check C's matching, statistics and verdict for any same-calendar-month fields (dims month, lat, lon).
+
+    Used for MOANA and, unchanged, for any alternative (Route D), so all are scored identically.
+    """
+    from picopast.fallback import climatology_verdict
+
     m_cfg, rule = cfg["matchup"], cfg["trust_gate"]["climatology_pattern"]
+    first = next(iter(fields.values()))
     st = historical_surface_stations(cfg)
-    st = _station_points(st, offshore, clim["pro"])
-    res = {"mapping": mapping, "n_stations_total": int(len(st)), "n_coastal_excluded": int((~st["offshore"]).sum()),
-           "months_in_climatology": sorted(int(m) for m in clim["pro"]["month"].values), "groups": {}}
+    st = _station_points(st, offshore, first)
+    res = {"n_stations_total": int(len(st)), "n_coastal_excluded": int((~st["offshore"]).sum()),
+           "months_in_climatology": sorted(int(m) for m in first["month"].values), "groups": {}}
     st = st[st["offshore"]]
-    for g in ("pro", "syn", "peuk"):
+    for g, clim in fields.items():
         col = f"{g}_cells_ml"
         s = st[st[col].notna()]
         n_zero = int((s[col] <= 0).sum())
         s = s[s[col] > 0]
         # Same-month lookup through the matchup code: a dummy year, months as days, no day offsets.
-        field = clim[g].rename(month="time").assign_coords(
-            time=pd.to_datetime([f"2000-{int(m):02d}-01" for m in clim[g]["month"].values]))
+        field = clim.rename(month="time").assign_coords(
+            time=pd.to_datetime([f"2000-{int(m):02d}-01" for m in clim["month"].values]))
         s = s.assign(time_utc=pd.to_datetime("2000-" + s["time_utc"].dt.strftime("%m") + "-01"))
         m = match(s, field, m_cfg["window_px"], m_cfg["min_valid_px"], (0,))
         stats = spearman_bootstrap(m["sat_value"], m[col], m["cruise"], n_boot=cfg["trust_gate"]["n_bootstrap"])
@@ -214,34 +223,42 @@ def check_c(cfg: Config, mapping: str = "operational") -> dict:
     return res
 
 
-def _chl_monthly_climatology(cfg: Config, like: xr.DataArray, offshore: np.ndarray) -> xr.DataArray:
-    """PACE-era VIIRS SNPP chlorophyll climatology by calendar month: mean log10(chl), offshore pixels.
+def viirs_monthly_climatology(cfg: Config, like: xr.DataArray, offshore: np.ndarray, product: str = "chl",
+                              log: bool = True) -> xr.DataArray:
+    """PACE-era VIIRS SNPP 8-day product averaged by calendar month (log10 first if `log`), offshore pixels.
 
-    Periods are grouped by the month of their middle day, as the MOANA climatology is.
+    product: "chl" (chlor_a) or "par" (par). Periods are grouped by the month of their middle day, as the
+    MOANA climatology is.
     """
     import re
 
+    var = {"chl": "chlor_a", "par": "par"}[product]
     pace = cfg["periods"]["pace"]
     rx = re.compile(r"\.(\d{8})_(\d{8})\.L3m\.8D\.")
     total, count = {}, {}
-    for path in sorted((cfg.path("raw") / "viirs_snpp_chl").glob("SNPP_VIIRS.*.L3m.8D.CHL.chlor_a.4km.box.nc")):
+    for path in sorted((cfg.path("raw") / f"viirs_snpp_{product}").glob(f"SNPP_VIIRS.*.L3m.8D.*.{var}.4km.box.nc")):
         a, b = (pd.Timestamp(x) for x in rx.search(path.name).groups())
         if a < pd.Timestamp(pace["start"]) or a > pd.Timestamp(pace["end"]):
             continue
         month = (a + (b - a) / 2).month
         with xr.open_dataset(path) as ds:
-            chl = ds["chlor_a"].values.astype(np.float64)
+            x = ds[var].values.astype(np.float64)
         with np.errstate(divide="ignore", invalid="ignore"):
-            v = np.where((chl > 0) & offshore, np.log10(chl), np.nan)
+            v = np.where((x > 0) & offshore, np.log10(x) if log else x, np.nan)
         total[month] = total.get(month, 0) + np.nan_to_num(v)
         count[month] = count.get(month, 0) + np.isfinite(v)
     if not total:
-        raise FileNotFoundError("no PACE-era VIIRS SNPP 8-day chlorophyll; fetch viirs_snpp_chl --period 8D")
+        raise FileNotFoundError(f"no PACE-era VIIRS SNPP 8-day {product}; fetch viirs_snpp_{product} --period 8D")
     months = sorted(total)
     with np.errstate(invalid="ignore"):
         data = np.stack([np.where(count[m] > 0, total[m] / count[m], np.nan) for m in months])
     return xr.DataArray(data, dims=("month", "lat", "lon"),
                         coords={"month": months, "lat": like["lat"].values, "lon": like["lon"].values})
+
+
+def _chl_monthly_climatology(cfg: Config, like: xr.DataArray, offshore: np.ndarray) -> xr.DataArray:
+    """PACE-era VIIRS SNPP chlorophyll climatology by calendar month: mean log10(chl), offshore pixels."""
+    return viirs_monthly_climatology(cfg, like, offshore, "chl", log=True)
 
 
 def chlorophyll_comparison(cfg: Config, mapping: str = "operational") -> Path:

@@ -199,6 +199,22 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+28. **Route D passes for the cyanobacteria (20 November; `docs/reports/route_d.md`,
+    rules in `docs/route_d_preregistration.md`, committed before the test).**
+    A LightGBM model trained on MAREDAT ship counts from the rest of the
+    world ocean (5,445 surface stations, Indian Ocean excluded) on SST,
+    chlorophyll, PAR, nitrate and season, with importance weights towards
+    the box's conditions (D2), scored exactly like MOANA in check C:
+    *Synechococcus* 0.50 [0.31, 0.64], *Prochlorococcus* 0.45 [0.25, 0.63],
+    both *pattern consistent*; paired against MOANA +0.32 and +0.35 with
+    intervals above zero. Picoeukaryotes 0.52, no better than MOANA (stays).
+    Caveats: D2 is no better than chlorophyll alone (paired +0.14 and +0.01,
+    intervals include zero), so the gain is in getting each group's map,
+    not in new information; a few dozen warm-pool Pacific samples carry
+    most of the weight, but leaving out any contributor or the whole warm
+    pool keeps every group passing (lowest: *Synechococcus* 0.32 [0.13, 0.51]).
+    Next: reconstruct both groups from D2 for 2012–2026 (pre-registered
+    decision), with the SST-free repeat for any climate result.
 27. **RQ5 per 0.25° cell (20 November; `docs/reports/climate_maps.md`).**
     `picopast climate-maps`: the reconstruction's reliable pixels averaged
     into OISST cells, composites per cell with year-resampled intervals.

@@ -128,6 +128,17 @@ def _climate(args):
     print(climate.report(load_config(args.config)).read_text())
 
 
+def _route_d(args):
+    from picopast import route_d
+
+    cfg = load_config(args.config)
+    if args.fetch:
+        from picopast.ingest.route_d_inputs import fetch
+
+        fetch(cfg)
+    print(route_d.report(cfg, refresh=args.refresh).read_text())
+
+
 def _climate_maps(args):
     from picopast import climate_maps
 
@@ -217,6 +228,10 @@ def main(argv=None):
     sub.add_parser("rq2", help="RQ2: full PACE spectra vs virtual VIIRS bands, same models").set_defaults(func=_rq2)
 
     sub.add_parser("climate", help="RQ5: trends, IOD/ENSO lags, heatwave composites").set_defaults(func=_climate)
+    c = sub.add_parser("route-d", help="Route D: globally ship-trained, Indian-Ocean-adjusted model (check C)")
+    c.add_argument("--refresh", action="store_true", help="recompute instead of using cached results")
+    c.add_argument("--fetch", action="store_true", help="download the inputs first (OISST, WOA23, MODIS)")
+    c.set_defaults(func=_route_d)
     sub.add_parser("climate-maps", help="RQ5 per 0.25° cell: ENSO, IOD and heatwave composite maps").set_defaults(
         func=_climate_maps)
 

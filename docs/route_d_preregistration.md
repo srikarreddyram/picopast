@@ -93,3 +93,4 @@ alone.
 | Date | Change | Reason |
 | --- | --- | --- |
 | 2026-11-20 | First version, binding | Written before any Route D prediction was compared with Indian Ocean counts. |
+| 2026-11-20 | Samples dated before OISST starts (December 1981) get the 1982–2011 mean SST of the same calendar month instead of their own month's SST | Found while building the training table, before any test: all 2,186 such samples are one contributor's (W. Li, Bedford Institute) and carry the year 1980, which appears to stand for "year unknown"; their months are real. Dropping them would remove 38% of the training stations, most of them Atlantic. |

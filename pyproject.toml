@@ -23,6 +23,7 @@ dependencies = [
     "requests>=2.31",
     "earthaccess>=0.9",
     "scikit-learn>=1.4",
+    "openpyxl>=3.1",  # MAREDAT picophytoplankton spreadsheet
 ]
 
 [project.optional-dependencies]

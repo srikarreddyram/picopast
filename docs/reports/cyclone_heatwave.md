@@ -50,7 +50,33 @@ By basin and season (unadjusted means):
 
 The storm's own extra cooling is still stronger over heatwave water by **-0.40 [-0.76, -0.03] °C** (744 points): about half the unadjusted gap is the heatwave decaying anyway.
 
-## RQ3: plankton groups after PACE-era storms (descriptive)
+## RQ3: which phytoplankton groups respond? (all storms, PicoPast's records)
+
+Change in log10 cells/mL after the storm (post minus pre, anomalies from each record's own 8-day climatology, 150 km). Primary: the versions built without sea temperature, so storm cooling cannot move them through the model's temperature input. These are model-implied group responses, not counts, and not independent of the chlorophyll response; *Prochlorococcus* is exploratory (failed check E).
+
+![groups](figures/cyclone_heatwave_groups.png)
+
+| group | change after storms [95%] | over normal water | over heatwave water | heatwave effect, adjusted [95%] |
+| --- | --- | --- | --- | --- |
+| picoeukaryotes | +0.146 [+0.105, +0.187], *rises after storms* (551 points, 66 storms) | +0.144 [+0.083, +0.203] | +0.153 [+0.111, +0.195] | -0.045 [-0.124, +0.023], *no detectable difference* |
+| Synechococcus | +0.138 [+0.073, +0.202], *rises after storms* (551 points, 66 storms) | +0.144 [+0.053, +0.231] | +0.133 [+0.057, +0.211] | -0.075 [-0.165, +0.008], *no detectable difference* |
+| Prochlorococcus | -0.163 [-0.218, -0.109], *falls after storms* (551 points, 66 storms) | -0.142 [-0.199, -0.088] | -0.188 [-0.294, -0.092] | +0.030 [-0.050, +0.121], *no detectable difference* |
+
+**Community shift** (per point, then averaged):
+- picoeukaryotes minus *Prochlorococcus*: +0.309 [+0.218, +0.396] (551 points, 66 storms)
+- *Synechococcus* minus *Prochlorococcus*: +0.301 [+0.203, +0.396] (551 points, 66 storms)
+
+Secondary, the main records (they include sea temperature):
+
+| group | change after storms [95%] | heatwave effect, adjusted [95%] |
+| --- | --- | --- |
+| picoeukaryotes | +0.170 [+0.125, +0.214], *rises after storms* | -0.047 [-0.130, +0.027], *no detectable difference* |
+| Synechococcus | +0.240 [+0.171, +0.308], *rises after storms* | -0.113 [-0.248, +0.016], *no detectable difference* |
+| Prochlorococcus | -0.155 [-0.200, -0.113], *falls after storms* | +0.041 [-0.027, +0.113], *no detectable difference* |
+
+Against PACE MOANA, the PicoPast picoeukaryote change has the same sign for 5 of 6 storms.
+
+### Cross-check: PACE MOANA, storms since 2024 (descriptive)
 
 Median change in log10 cells over each storm's points (post minus pre, 150 km). *Synechococcus* and *Prochlorococcus* from MOANA failed check C in this box: exploratory.
 

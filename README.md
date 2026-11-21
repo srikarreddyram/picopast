@@ -12,10 +12,11 @@ against ship counts, and (if it passes) extend the estimates back to 2012 with
 VIIRS. MOANA output is treated as a model estimate, not truth, and climate
 results are reported as associations, not causes.
 
-**New direction (22 November 2026): when cyclones hit heatwaves.** The project now
-asks how marine heatwaves change the North Indian Ocean's response to tropical cyclones
-(83 storms, 2012–2026), with NASA satellite data; the picophytoplankton work below
-becomes one part of it. Literature check: [docs/literature_survey.md](docs/literature_survey.md);
+**New direction (22 November 2026): how marine heatwaves change the phytoplankton
+response to cyclones.** The project now asks whether a marine heatwave changes how
+phytoplankton respond to tropical cyclones in the North Indian Ocean (83 storms,
+2012–2026), with NASA satellite data and PicoPast's own picophytoplankton records
+(the work below), which answer RQ3 for every storm. Literature check: [docs/literature_survey.md](docs/literature_survey.md);
 rules fixed before testing: [docs/cyclone_heatwave_preregistration.md](docs/cyclone_heatwave_preregistration.md);
 first results: [docs/reports/cyclone_heatwave.md](docs/reports/cyclone_heatwave.md).
 
@@ -25,6 +26,10 @@ decaying anyway) and end most of the heatwaves they cross. Whether the heatwave 
 the plankton bloom afterwards is not settled: the pre-registered test gives
 -0.058 [-0.125, +0.004] (log10 chlorophyll), leaning towards a
 weaker bloom with the interval just including zero.
+After storms, picoeukaryotes (+0.15 log10) and *Synechococcus*
+(+0.14) rise and *Prochlorococcus* (-0.16) falls in PicoPast's
+records built without sea temperature: a shift towards larger cells, with intervals
+clear of zero. A heatwave does not detectably change that shift.
 
 ## Setup
 

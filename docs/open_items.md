@@ -221,8 +221,18 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       -0.03]: about half the gap is heatwaves decaying anyway.
       Storms end heatwaves: 9% of heatwave cells under storms
       still in a heatwave 5 days later against 31% far away.
-    - **RQ3 (PACE, 6 storms with data):** picoeukaryotes rose after all six;
-      *Prochlorococcus* fell or held in five (exploratory).
+    - **Retitled (22 November):** *How marine heatwaves change the phytoplankton
+      response to cyclones in the North Indian Ocean*.
+    - **RQ3 extended to all storms with PicoPast's records** (pre-registered
+      before it ran; versions built without sea temperature are primary):
+      picoeukaryotes +0.146 [+0.105, +0.187]
+      and *Synechococcus* +0.138 [+0.073, +0.202] rise after
+      storms, *Prochlorococcus* -0.163 [-0.218, -0.109] falls
+      (exploratory); the shift towards larger cells is +0.31 and
+      +0.30 log10 relative to *Prochlorococcus*. A heatwave does not
+      detectably change any group's response. These are model-implied responses,
+      driven mostly by chlorophyll, not counts. PACE MOANA agrees on the
+      picoeukaryote sign for 5 of 6 storms.
     - **RQ4:** cooling is predictable on unseen storms (ridge skill
       +0.45, ρ 0.73);
       the bloom less so (+0.28); heatwave inputs add

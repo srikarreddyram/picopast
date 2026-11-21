@@ -39,7 +39,8 @@ from picopast.config import Config
 
 GROUPS = ("peuk", "syn", "pro")
 NAMES = {"pro": "Prochlorococcus", "syn": "Synechococcus", "peuk": "picoeukaryotes",
-         "peuk_nosst": "picoeukaryotes, no SST"}
+         "peuk_nosst": "picoeukaryotes, no SST", "syn_nosst": "Synechococcus, no SST",
+         "pro_nosst": "Prochlorococcus, no SST"}
 CELL = 6  # 1/24° pixels per 0.25° cell
 MIN_PIXELS = 9  # of 36
 LEAD_MONTHS = 2
@@ -293,7 +294,7 @@ def plot(res: dict, groups: tuple[str, ...], tiers: dict, out: Path, title: str)
             share = clear.sum() / max(np.isfinite(d).sum(), 1)
             name = NAMES[g][0].upper() + NAMES[g][1:]
             tag = "EXPLORATORY" if kind == "exploratory" else kind
-            ax.set_title(f"{name} ({tag}) — {label}\nclear cells (dots): {share:.0%}", loc="left", fontsize=9,
+            ax.set_title(f"{name} — {label}\n{tag} · clear cells (dots): {share:.0%}", loc="left", fontsize=9,
                          color=ink, fontweight="bold" if kind == "exploratory" else "normal")
             ax.tick_params(colors=muted, labelsize=7)
             for s in ax.spines.values():
@@ -431,8 +432,10 @@ def report(cfg: Config) -> Path:
     L += ["", "\"Survives\" = mean difference without SST / with SST, over the whole map. Pattern r compares where "
           "the two put the change.", "",
           "## Cyanobacteria (exploratory)", "",
-          "Shown for completeness; they did not pass the trust gate and the two satellites disagree on their "
-          "long-term change (`sensor_comparison.md`).", "",
+          "These are the MOANA-based records learned from VIIRS (Route A), shown for completeness: they did not "
+          "pass the trust gate and the two satellites disagree on their long-term change "
+          "(`sensor_comparison.md`). The cyanobacteria records that did pass are from Route D, with their own "
+          "maps in `route_d_reconstruction.md`.", "",
           "![exploratory](figures/climate_maps_exploratory.png)", ""]
     out = cfg.path("reports") / "climate_maps.md"
     out.write_text("\n".join(L))

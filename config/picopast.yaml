@@ -142,10 +142,13 @@ reconstruction:
     pro: [0, 600000]
     syn: [0, 300000]
     peuk: [0, 40000]
+  # These tiers are for the MOANA-learned records above. Synechococcus and Prochlorococcus
+  # passed check C with Route D instead (docs/reports/route_d.md); that record is
+  # data/products/reconstruction/{sensor}_route_d/, tier "relative index, Route D".
   tiers:
     peuk: "relative index: passed the trust gate (check C pattern consistent)"
-    syn: "exploratory: did not pass the trust gate (check C inconclusive)"
-    pro: "exploratory: did not pass the trust gate (check A not supported; check C inconclusive)"
+    syn: "exploratory: did not pass the trust gate (check C inconclusive); use the Route D record"
+    pro: "exploratory: did not pass the trust gate (check A not supported; check C inconclusive); use the Route D record"
 
 paths:
   data: data

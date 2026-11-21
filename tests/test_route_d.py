@@ -56,3 +56,12 @@ def test_mission_climatology_choice():
              "MODISA_L3m_CHL_AQUA_MODIS.20020701_20250731.L3m.MC.CHL.chlor_a.9km.nc_2022.0"]
     got = mission_climatologies(names)
     assert got[1] == names[1] and got[7] == names[3] and len(got) == 2
+
+
+def test_weighted_quantile():
+    from picopast.route_d_reconstruct import weighted_quantile
+
+    x = np.array([1.0, 2.0, 3.0, 4.0])
+    assert weighted_quantile(x, np.ones(4), 0.5) == pytest.approx(2.5)
+    assert weighted_quantile(x, np.ones(4), [0.0, 1.0]) == pytest.approx([1.0, 4.0])
+    assert weighted_quantile(x, np.array([0, 0, 0, 1.0]), [0.01, 0.99]) == pytest.approx([4.0, 4.0])

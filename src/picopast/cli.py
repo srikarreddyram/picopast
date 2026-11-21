@@ -139,6 +139,12 @@ def _route_d(args):
     print(route_d.report(cfg, refresh=args.refresh).read_text())
 
 
+def _route_d_reconstruct(args):
+    from picopast import route_d_reconstruct
+
+    print(route_d_reconstruct.report(load_config(args.config), refresh=args.refresh).read_text())
+
+
 def _climate_maps(args):
     from picopast import climate_maps
 
@@ -232,6 +238,9 @@ def main(argv=None):
     c.add_argument("--refresh", action="store_true", help="recompute instead of using cached results")
     c.add_argument("--fetch", action="store_true", help="download the inputs first (OISST, WOA23, MODIS)")
     c.set_defaults(func=_route_d)
+    c = sub.add_parser("route-d-reconstruct", help="back-extend Synechococcus and Prochlorococcus with Route D")
+    c.add_argument("--refresh", action="store_true", help="rebuild the maps instead of using cached ones")
+    c.set_defaults(func=_route_d_reconstruct)
     sub.add_parser("climate-maps", help="RQ5 per 0.25° cell: ENSO, IOD and heatwave composite maps").set_defaults(
         func=_climate_maps)
 

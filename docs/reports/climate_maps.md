@@ -1,6 +1,6 @@
 # Climate maps (RQ5, per 0.25° cell)
 
-Generated 2026-11-20 by `picopast climate-maps`. Where in the North Indian Ocean the back-extended record moves with ENSO, the IOD and marine heatwaves. Same idea as the regional analysis (`climate.md`), cell by cell on the OISST grid. Associations, not causes; only picoeukaryotes passed the trust gate.
+Generated 2026-11-21 by `picopast climate-maps`. Where in the North Indian Ocean the back-extended record moves with ENSO, the IOD and marine heatwaves. Same idea as the regional analysis (`climate.md`), cell by cell on the OISST grid. Associations, not causes; only picoeukaryotes passed the trust gate.
 
 - Cell value: mean of the reliable 1/24° pixels (all model inputs inside the training range) in each 0.25° cell, as a relative index in SD units; at least 9 of 36 pixels needed. Anomaly: minus the cell's mean for the same 8-day slot of the year.
 - ENSO: ONI 2 months earlier ≥ +0.5 vs ≤ −0.5. IOD: DMI 2 months earlier ≥ +0.4 vs ≤ −0.4 (the strongest lag regionally, for both). ENSO and IOD events overlap (2015, 2019, 2023), so the two maps are not independent.
@@ -70,6 +70,6 @@ SST is one of the model's inputs, and heatwaves (and much of ENSO's and the IOD'
 
 ## Cyanobacteria (exploratory)
 
-Shown for completeness; they did not pass the trust gate and the two satellites disagree on their long-term change (`sensor_comparison.md`).
+These are the MOANA-based records learned from VIIRS (Route A), shown for completeness: they did not pass the trust gate and the two satellites disagree on their long-term change (`sensor_comparison.md`). The cyanobacteria records that did pass are from Route D, with their own maps in `route_d_reconstruction.md`.
 
 ![exploratory](figures/climate_maps_exploratory.png)

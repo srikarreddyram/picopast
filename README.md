@@ -76,13 +76,13 @@ Trust gate (binding rule, run 16 November): there are no PACE-era cell counts
 in the box, so the pre-registered fallback checks decided which groups go
 forward. **Picoeukaryotes pass** (same-month pattern vs 1991–2005 counts,
 ρ = 0.51 [0.24, 0.64]) and are reconstructed as a relative index.
-Synechococcus and Prochlorococcus are inconclusive and are not reconstructed.
+Synechococcus and Prochlorococcus are inconclusive with MOANA; they pass with Route D (below).
 Details in [docs/reports/trust_gate_fallback.md](docs/reports/trust_gate_fallback.md).
 
 Back-extension, first attempt (17 November): `picopast reconstruct` learns
 MOANA from VIIRS SNPP 8-day inputs in the PACE era and rebuilds all three
 groups for 2012–2026, each tagged with its trust-gate tier (Synechococcus and
-Prochlorococcus are exploratory). Route A beats a seasonal climatology on
+Prochlorococcus are exploratory here; use their Route D record, below). Route A beats a seasonal climatology on
 held-out blocks for every group (skill 0.39 picoeukaryotes, 0.20
 Synechococcus, 0.18 Prochlorococcus); the SST + PAR route does not. Details
 and bottlenecks in [docs/reports/reconstruction.md](docs/reports/reconstruction.md).
@@ -117,6 +117,14 @@ ship counts from the rest of the world ocean (MAREDAT, Indian Ocean held out) an
 weighted towards this box's conditions does: ρ 0.50 and 0.45, both passing the
 same pre-registered test, and clearly better than MOANA; it is no better than
 chlorophyll alone ([docs/reports/route_d.md](docs/reports/route_d.md)).
+Both groups are now rebuilt from it for 2012–2026 as a relative index
+(`picopast route-d-reconstruct`). The two satellites agree, and the old records' rises
+over 2012–2025 were sensor drift. *Prochlorococcus* rises during marine heatwaves, with
+or without SST as an input. *Synechococcus* falls, but mostly through the SST input
+([docs/reports/route_d_reconstruction.md](docs/reports/route_d_reconstruction.md)).
+
+**Everything side by side** (which record each group uses, and where performance
+improved): [docs/reports/comparison.md](docs/reports/comparison.md).
 
 RQ3: on real VIIRS the direct route (A) beats the two-step route (B: rebuild
 the PACE spectrum, then MOANA) for every group, and the SST + PAR route (C)

@@ -199,6 +199,33 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+29. **Route D record for the cyanobacteria, 2012–2026 (21 November;
+    `docs/reports/route_d_reconstruction.md`, overview in `docs/reports/comparison.md`).**
+    `picopast route-d-reconstruct`: D2 rebuilt *Synechococcus* and
+    *Prochlorococcus* for all 674 eight-day periods (SNPP) and 402 (NOAA-20).
+    The pre-registered decision; tier "relative index, Route D".
+    - **Sensors agree:** r 0.97–1.00, drift −0.03 and +0.05 SD per decade, down
+      from +0.13 and +0.25 in the old MOANA-based records. Same result with the
+      no-SST models, which see only what differs between the satellites.
+    - **The old records' significant 2012–2025 rises are gone:** they were the
+      SNPP drift. The new and old records disagree on timing (monthly anomaly
+      r −0.48 to +0.15).
+    - **Synechococcus:** lower after El Niño and positive IOD (r −0.56 / −0.60)
+      and during heatwaves (−0.56 on the maps), but most of that is the SST
+      input. Without SST: r −0.41 / −0.34, heatwave −0.25. The Bay of Bengal
+      trend (−0.24 per decade) disappears without SST.
+    - **Prochlorococcus:** higher during heatwaves (+0.26 on the maps, 68% of
+      cells clear; study box +0.15 [+0.06, +0.20]). This holds without SST,
+      so it comes through low chlorophyll and high light. Weak ENSO and IOD
+      links.
+    - **Found and fixed:** Route D's reliable pixels thin out during heatwaves.
+      *Prochlorococcus* training SST ends at 29.9 °C, so the warmest water drops
+      out, and this had hidden the *Prochlorococcus* rise in the regional
+      average. The report now gives all-valid-pixel results next to the
+      reliable-pixel ones. The picoeukaryote record is not affected (its
+      in-range share is ≈ 90% in both heatwave and normal periods).
+    - **Limits:** 57% of *Prochlorococcus* pixels and 74% of *Synechococcus*
+      pixels are inside the training range.
 28. **Route D passes for the cyanobacteria (20 November; `docs/reports/route_d.md`,
     rules in `docs/route_d_preregistration.md`, committed before the test).**
     A LightGBM model trained on MAREDAT ship counts from the rest of the

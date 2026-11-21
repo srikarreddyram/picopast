@@ -145,6 +145,12 @@ def _check_e(args):
     print(check_e.report(load_config(args.config)).read_text())
 
 
+def _cyclone_heatwave(args):
+    from picopast import storms_analysis
+
+    print(storms_analysis.report(load_config(args.config), refresh=args.refresh).read_text())
+
+
 def _route_d_reconstruct(args):
     from picopast import route_d_reconstruct
 
@@ -247,6 +253,9 @@ def main(argv=None):
     c = sub.add_parser("route-d-reconstruct", help="back-extend Synechococcus and Prochlorococcus with Route D")
     c.add_argument("--refresh", action="store_true", help="rebuild the maps instead of using cached ones")
     c.set_defaults(func=_route_d_reconstruct)
+    c = sub.add_parser("cyclone-heatwave", help="when cyclones hit heatwaves: storm table, tests and report")
+    c.add_argument("--refresh", action="store_true", help="rebuild the storm table instead of using the cached one")
+    c.set_defaults(func=_cyclone_heatwave)
     sub.add_parser("check-e", help="check E: new HPLC stations vs the Route D record (pre-registered)").set_defaults(
         func=_check_e)
     sub.add_parser("climate-maps", help="RQ5 per 0.25° cell: ENSO, IOD and heatwave composite maps").set_defaults(

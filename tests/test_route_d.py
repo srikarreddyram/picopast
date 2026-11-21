@@ -65,3 +65,13 @@ def test_weighted_quantile():
     assert weighted_quantile(x, np.ones(4), 0.5) == pytest.approx(2.5)
     assert weighted_quantile(x, np.ones(4), [0.0, 1.0]) == pytest.approx([1.0, 4.0])
     assert weighted_quantile(x, np.array([0, 0, 0, 1.0]), [0.01, 0.99]) == pytest.approx([4.0, 4.0])
+
+
+def test_period_start_restarts_each_year():
+    import pandas as pd
+
+    from picopast.check_e import period_start
+
+    assert period_start(pd.Timestamp("2018-05-22 10:00")) == pd.Timestamp("2018-05-17")
+    assert period_start(pd.Timestamp("2025-12-31")) == pd.Timestamp("2025-12-27")
+    assert period_start(pd.Timestamp("2024-01-08")) == pd.Timestamp("2024-01-01")

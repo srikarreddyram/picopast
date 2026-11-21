@@ -140,3 +140,50 @@ def test_paired_difference_and_partial():
     d = paired_spearman_difference(a_extra, z, y, np.repeat(np.arange(30), 10), n_boot=300)
     assert d["diff"] > 0 and d["diff_lo"] > 0 and d["partial"] > 0.3
     assert abs(partial_spearman(a, y, z)) < 0.15  # a adds nothing beyond z here
+
+
+# ---------------------------------------------------------------- HPLC file layouts (made-up values)
+
+from picopast.insitu.pigments import load_hplc  # noqa: E402
+
+_OLD = """/begin_header
+/cruise=demo
+/north_latitude=5.5[DEG]
+/south_latitude=5.5[DEG]
+/east_longitude=90.0[DEG]
+/west_longitude=90.0[DEG]
+/start_date=20070413
+/start_time=12:24:00[GMT]
+/measurement_depth=5.0
+/missing=-9999
+/delimiter=space
+/fields=Zea,DV_Chl_a,Tot_Chl_a
+/units=mg/m^3,mg/m^3,mg/m^3
+/end_header@
+0.1 0.2 0.3
+"""
+_YMD = """/begin_header
+/cruise=demo2
+/missing=-9999
+/delimiter=comma
+/fields=year,month,day,time,lat,lon,depth,dv_chl_a,zea,tchl
+/units=yyyy,mo,dd,hh:mm:ss,degrees,degrees,m,mg/m^3,mg/m^3,mg/m^3
+/end_header
+2018,4,25,06:00:00,10.0,65.0,3,0.05,0.07,0.2
+2018,4,26,06:00:00,11.0,65.5,3,-9999,0.08,0.3
+"""
+
+
+def test_load_hplc_reads_old_and_ymd_layouts(tmp_path):
+    a, b = tmp_path / "old.sb", tmp_path / "ymd.sb"
+    a.write_text(_OLD)
+    b.write_text(_YMD)
+    s = load_hplc([a, b])
+    old = s[s["dataset_id"] == "old.sb"].iloc[0]
+    assert (old["lat"], old["lon"], old["depth_m"]) == (5.5, 90.0, 5.0)
+    assert old["time_utc"] == pd.Timestamp("2007-04-13 12:24:00")
+    assert (old["dv_chl_a"], old["zea"], old["tchl"]) == (0.2, 0.1, 0.3)
+    ymd = s[s["dataset_id"] == "ymd.sb"]
+    assert ymd["time_utc"].tolist() == [pd.Timestamp("2018-04-25 06:00"), pd.Timestamp("2018-04-26 06:00")]
+    assert np.isnan(ymd["dv_chl_a"].iloc[1])
+    assert s["sample_id"].nunique() == 3  # rows without an id are never merged

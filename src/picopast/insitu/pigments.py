@@ -19,26 +19,67 @@ from picopast.insitu.seabass import read_sb
 PIGMENTS = ("dv_chl_a", "zea", "tchl")
 
 
+#: Field-name spellings seen in SeaBASS HPLC files (matched case-insensitively) -> our column.
+_ALIASES = {"dv_chl_a": "dv_chl_a", "zea": "zea", "tchl": "tchl", "tot_chl_a": "tchl"}
+
+
+def _col(df: pd.DataFrame, name: str, fallback: float = np.nan) -> pd.Series:
+    return pd.to_numeric(df[name], errors="coerce") if name in df else pd.Series(fallback, index=df.index)
+
+
+def _header_float(header: dict[str, str], key: str) -> float:
+    try:
+        return float(header.get(key, "").split("[")[0])
+    except ValueError:
+        return np.nan
+
+
 def load_hplc(paths: list[Path]) -> pd.DataFrame:
-    """All samples from SeaBASS HPLC files, one row per sample, pigments in mg m-3."""
+    """All samples from SeaBASS HPLC files, one row per sample, pigments in mg m-3.
+
+    Handles the three layouts met so far: a ``date`` column; ``year``/``month``/``day``
+    columns; and older one-station files whose position, date, time and depth are only
+    in the header. Field names are matched case-insensitively.
+    """
     frames = []
     for path in paths:
         header, df = read_sb(path)
-        time = pd.to_datetime(
-            df["date"].astype("Int64").astype(str) + " " + df.get("time", "00:00:00").astype(str),
-            format="%Y%m%d %H:%M:%S", errors="coerce",
-        )
+        df.columns = [c.lower() for c in df.columns]
+        n = len(df)
+        if "date" in df:
+            day = df["date"].astype("Int64").astype(str)
+        elif {"year", "month", "day"} <= set(df.columns):
+            day = (df["year"].astype("Int64").astype(str) + df["month"].astype("Int64").astype(str).str.zfill(2)
+                   + df["day"].astype("Int64").astype(str).str.zfill(2))
+        else:
+            day = pd.Series([header.get("start_date", "")] * n, index=df.index)
+        clock = df["time"].astype(str) if "time" in df else pd.Series(
+            [header.get("start_time", "00:00:00").split("[")[0]] * n, index=df.index)
+        time = pd.to_datetime(day + " " + clock, format="%Y%m%d %H:%M:%S", errors="coerce")
+
+        lat_h = (_header_float(header, "north_latitude") if _header_float(header, "north_latitude")
+                 == _header_float(header, "south_latitude") else np.nan)
+        lon_h = (_header_float(header, "east_longitude") if _header_float(header, "east_longitude")
+                 == _header_float(header, "west_longitude") else np.nan)
+        own = Path(path).name + "#" + pd.Series(range(n), index=df.index).astype(str)
+        gsfc = df["hplc_gsfc_id"].astype(str).str.strip() if "hplc_gsfc_id" in df else own
+        sample_id = gsfc.where(~gsfc.isin(["nan", "", "-9999", "<NA>"]), own)  # a missing id must not merge rows
+        pig = {}
+        for field, ours in _ALIASES.items():
+            if field in df and ours not in pig:
+                pig[ours] = pd.to_numeric(df[field], errors="coerce")
         frames.append(pd.DataFrame({
             "source": "seabass",
             "dataset_id": Path(path).name,
             "cruise": header.get("cruise", Path(path).stem),
-            "station": df.get("station", pd.Series(index=df.index, dtype=object)).astype(str),
-            "sample_id": df.get("hplc_gsfc_id", pd.Series(index=df.index, dtype=object)).astype(str),
+            "station": (df["station"] if "station" in df else pd.Series(header.get("station", ""), index=df.index)
+                        ).astype(str),
+            "sample_id": sample_id,
             "time_utc": time,
-            "lat": pd.to_numeric(df["lat"], errors="coerce"),
-            "lon": pd.to_numeric(df["lon"], errors="coerce"),
-            "depth_m": pd.to_numeric(df["depth"], errors="coerce"),
-            **{p: pd.to_numeric(df[p], errors="coerce") if p in df else np.nan for p in PIGMENTS},
+            "lat": _col(df, "lat", lat_h),
+            "lon": _col(df, "lon", lon_h),
+            "depth_m": _col(df, "depth", _header_float(header, "measurement_depth")),
+            **{p: pig.get(p, pd.Series(np.nan, index=df.index)) for p in PIGMENTS},
         }))
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 

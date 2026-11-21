@@ -47,7 +47,7 @@ def read_sb(source: str | Path | io.TextIOBase) -> tuple[dict[str, str], pd.Data
     lines = text.splitlines()
     for i, line in enumerate(lines):
         line = line.strip()
-        if line.lower() == "/end_header":
+        if line.lower().rstrip("@") == "/end_header":  # older files end the header with "/end_header@"
             body = lines[i + 1 :]
             break
         if line.startswith("/") and "=" in line:

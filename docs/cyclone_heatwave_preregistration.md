@@ -187,3 +187,4 @@ are shown as exploratory.
 | Date | Change | Reason |
 | --- | --- | --- |
 | 2026-11-22 | First version, binding | Written before any storm response was computed. |
+| 2026-11-22 | Added a post-hoc, non-binding check of cooling against far-away water with the same heatwave status on the same days (per-cell cooling, same basin, more than 750 km from any storm) | Added after the first results: heatwave water cools on its own as heatwaves decay, so part of the pre-registered cooling difference may not be the storm's. Reported beside the pre-registered result, which it does not replace. |

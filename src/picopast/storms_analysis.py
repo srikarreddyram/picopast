@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from picopast.config import Config
-from picopast.storms import HOT, NORMAL
+from picopast.storms import HOT, NORMAL, R_KM
 
 N_BOOT = 2000
 SEED = 0
@@ -274,8 +274,10 @@ def run(cfg: Config, table: pd.DataFrame) -> dict:
     km = {}
     for label, cls in (("heatwave", 1), ("normal", 0)):
         g = prim[(prim["heatwave"] == cls) & prim["rewarm_days"].notna()]
-        km[label] = {"n": int(len(g)), "median_days": km_median(g["rewarm_days"], g["rewarm_event"].astype(bool))}
+        km[label] = {"n": int(len(g)), "median_days": km_median(g["rewarm_days"], g["rewarm_event"].astype(bool)),
+                     "share_rewarmed": float(g["rewarm_event"].astype(bool).mean()) if len(g) else np.nan}
     res["rq1_rewarm"] = km
+    res["rq1_excess_cooling_posthoc"] = excess_cooling(cfg, prim)
     # RQ3
     pace = prim.dropna(subset=["d_peuk", "d_pro"], how="all")
     rows = []
@@ -294,6 +296,60 @@ def run(cfg: Config, table: pd.DataFrame) -> dict:
 
 def _fmt(e: dict, k="effect", digits=3) -> str:
     return f"{e[k]:+.{digits}f} [{e['lo']:+.{digits}f}, {e['hi']:+.{digits}f}]"
+
+
+def _days(v) -> str:
+    return "over 60 days" if not np.isfinite(v) else f"{v:.0f} days"
+
+
+def excess_cooling(cfg: Config, prim: pd.DataFrame, n_boot: int = N_BOOT) -> dict:
+    """POST HOC (not pre-registered): storm cooling beyond what far-away water of the same heatwave status did.
+
+    Per cell, min(D0..D0+5) minus mean(D0-7..D0-3) of OISST; storm = mean over the 150 km disc's ocean cells;
+    control = mean over cells in the same basin, > 750 km from every fix within +-10 days, with the same heatwave
+    status on D0-3. Difference of the excess (heatwave minus normal points) with a storm-resampled interval.
+    """
+    from picopast import storms
+
+    oc = storms.daily_ocean(cfg)
+    time = pd.DatetimeIndex(oc["time"].values)
+    day = {d: i for i, d in enumerate(time)}
+    lat, lon = oc["lat"].values, oc["lon"].values
+    sst = oc["sst"].values.astype(np.float32)
+    hot = oc["hot"].values
+    is_ocean = np.isfinite(sst).mean(0) > 0.5
+    la2, lo2 = np.meshgrid(lat, lon, indexing="ij")
+    fixes = storms.all_fixes(cfg)
+    cache, rows = {}, []
+    for r in prim.dropna(subset=["heatwave"]).itertuples():
+        k0, ka = day.get(r.d0), day.get(r.d0 - pd.Timedelta(days=storms.LAG))
+        if k0 is None or ka is None or k0 < 7 or k0 + 6 > time.size:
+            continue
+        key = (r.d0, r.basin)
+        if key not in cache:
+            near = fixes[(fixes["time"] >= r.d0 - pd.Timedelta(days=10)) & (fixes["time"] <= r.d0 + pd.Timedelta(days=10))]
+            far = is_ocean & ((lo2 < storms.SPLIT_LON) if r.basin == "Arabian Sea" else (lo2 >= storms.SPLIT_LON))
+            for f in near.itertuples():
+                far &= storms.haversine_km(f.lat, f.lon, la2, lo2) > storms.CONTROL_KM
+            pre = np.nanmean(sst[k0 - 7:k0 - 2], axis=0)
+            cache[key] = (np.nanmin(sst[k0:k0 + 6], axis=0) - pre, far)
+        change, far = cache[key]
+        iy, ix = storms.disc(lat, lon, r.lat, r.lon, R_KM, is_ocean)
+        ctrl = change[far & (hot[ka] == int(r.heatwave))]
+        if iy.size and ctrl.size:
+            rows.append({"sid": r.sid, "heatwave": r.heatwave, "storm": float(np.nanmean(change[iy, ix])),
+                         "control": float(np.nanmean(ctrl))})
+    d = pd.DataFrame(rows).dropna()
+    d["excess"] = d["storm"] - d["control"]
+    y, h = d["excess"].to_numpy(), d["heatwave"].to_numpy()
+    est = y[h == 1].mean() - y[h == 0].mean()
+    draws = [y[i][h[i] == 1].mean() - y[i][h[i] == 0].mean() for i in storm_draws(d["sid"].to_numpy(), n_boot)]
+    m = d.groupby("heatwave")[["storm", "control", "excess"]].mean()
+    return {"n_points": int(len(d)), "diff": float(est), "lo": float(np.percentile(draws, 2.5)),
+            "hi": float(np.percentile(draws, 97.5)),
+            "storm_heatwave": float(m.loc[1.0, "storm"]), "control_heatwave": float(m.loc[1.0, "control"]),
+            "excess_heatwave": float(m.loc[1.0, "excess"]), "storm_normal": float(m.loc[0.0, "storm"]),
+            "control_normal": float(m.loc[0.0, "control"]), "excess_normal": float(m.loc[0.0, "excess"])}
 
 
 def report(cfg: Config, refresh: bool = False) -> Path:
@@ -345,9 +401,24 @@ def report(cfg: Config, refresh: bool = False) -> Path:
           f"- **Heatwave survival** to D0+5: {sv['storm_share']:.0%} of the heatwave cells under storms stayed in a "
           f"heatwave, against {sv['control_share']:.0%} of far-away heatwave cells on the same days; difference "
           f"{_fmt(sv)} ({sv['n_points']} points, {sv['n_storms']} storms).",
-          f"- **Re-warming** (descriptive): median {km['heatwave']['median_days']} days over heatwave water "
-          f"(n {km['heatwave']['n']}) and {km['normal']['median_days']} days over normal water (n {km['normal']['n']}).",
-          "", "## RQ3: plankton groups after PACE-era storms (descriptive)", "",
+          f"- **Re-warming** (descriptive): back to the pre-storm anomaly within 60 days at "
+          f"{km['heatwave']['share_rewarmed']:.0%} of heatwave points (median {_days(km['heatwave']['median_days'])}) "
+          f"and {km['normal']['share_rewarmed']:.0%} of normal points (median {_days(km['normal']['median_days'])}). "
+          "Over heatwave water the pre-storm anomaly is the heatwave itself, so most of those heatwaves did not return.",
+          ""]
+    x = res["rq1_excess_cooling_posthoc"]
+    L += ["**Post hoc check, not pre-registered** (added after the first results; it does not change the verdict "
+          "above). Heatwave water cools on its own as heatwaves decay, storm or no storm. The same cooling measure, "
+          "per cell, for far-away water with the same heatwave status on the same days (same basin, more than 750 km "
+          "from any storm):", "",
+          "| | under the storm | far-away water, same days | storm's own extra cooling |", "| --- | --- | --- | --- |",
+          f"| heatwave points | {x['storm_heatwave']:+.2f} °C | {x['control_heatwave']:+.2f} °C | "
+          f"{x['excess_heatwave']:+.2f} °C |",
+          f"| normal points | {x['storm_normal']:+.2f} °C | {x['control_normal']:+.2f} °C | {x['excess_normal']:+.2f} °C |",
+          "",
+          f"The storm's own extra cooling is still stronger over heatwave water by **{_fmt(x, 'diff', 2)} °C** "
+          f"({x['n_points']} points): about half the unadjusted gap is the heatwave decaying anyway.", "",
+          "## RQ3: plankton groups after PACE-era storms (descriptive)", "",
           "Median change in log10 cells over each storm's points (post minus pre, 150 km). *Synechococcus* and "
           "*Prochlorococcus* from MOANA failed check C in this box: exploratory.", "",
           "| storm | first day | points | picoeukaryotes | Synechococcus | Prochlorococcus | bloom (chl) | heatwave share |",

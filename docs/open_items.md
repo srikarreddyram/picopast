@@ -199,6 +199,38 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+31. **New direction: when cyclones hit heatwaves (22 November; proposal doc
+    "Project Proposal — When Cyclones Hit Heatwaves", survey `docs/literature_survey.md`,
+    rules `docs/cyclone_heatwave_preregistration.md` committed before any response,
+    results `docs/reports/cyclone_heatwave.md`).**
+    - **Why:** the literature survey found heatwave-driven intensification,
+      heatwave forecasting and heatwave drivers already published; no study,
+      in any basin, tests how a heatwave changes the bloom after a cyclone.
+    - **Data:** 896 track points from 83 storms (JTWC ≥ 34 kt, ≥ 50 km from
+      land, 2012–2026); 267 points (39 storms) over heatwave water, 482 (60)
+      over normal water. New downloads: IBTrACS v04r01, NASA-SSH sea level
+      (785 weekly grids), SMAP salinity (221 storm dates).
+    - **RQ2 (primary), bloom:** *no detectable difference*,
+      -0.058 [-0.125, +0.004] log10. All eight
+      sensitivity checks lean the same way (weaker bloom over heatwaves); two
+      exclude zero (continuous exposure, 75 km disc). Strata disagree
+      (weaker in the Bay of Bengal after the monsoon, stronger elsewhere).
+    - **RQ1:** cooling stronger over heatwaves, -0.57 °C
+      [-0.86, -0.25]. A post-hoc check against far-away water
+      of the same heatwave status leaves -0.40 °C [-0.76,
+      -0.03]: about half the gap is heatwaves decaying anyway.
+      Storms end heatwaves: 9% of heatwave cells under storms
+      still in a heatwave 5 days later against 31% far away.
+    - **RQ3 (PACE, 6 storms with data):** picoeukaryotes rose after all six;
+      *Prochlorococcus* fell or held in five (exploratory).
+    - **RQ4:** cooling is predictable on unseen storms (ridge skill
+      +0.45, ρ 0.73);
+      the bloom less so (+0.28); heatwave inputs add
+      no skill beyond plain pre-storm temperature.
+    - **Next:** a replication on 2002–2011 storms with MODIS-Aqua chlorophyll
+      (independent storms, pre-registered before it runs) to sharpen RQ2;
+      chlorophyll for October–November 2026; mixed-layer depth when the
+      Copernicus account arrives.
 30. **Check E: Prochlorococcus fails the new pigment test (21 November;
     `docs/reports/check_e.md`, rules in `docs/check_e_preregistration.md`, committed
     before the test).**

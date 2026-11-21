@@ -12,6 +12,20 @@ against ship counts, and (if it passes) extend the estimates back to 2012 with
 VIIRS. MOANA output is treated as a model estimate, not truth, and climate
 results are reported as associations, not causes.
 
+**New direction (22 November 2026): when cyclones hit heatwaves.** The project now
+asks how marine heatwaves change the North Indian Ocean's response to tropical cyclones
+(83 storms, 2012–2026), with NASA satellite data; the picophytoplankton work below
+becomes one part of it. Literature check: [docs/literature_survey.md](docs/literature_survey.md);
+rules fixed before testing: [docs/cyclone_heatwave_preregistration.md](docs/cyclone_heatwave_preregistration.md);
+first results: [docs/reports/cyclone_heatwave.md](docs/reports/cyclone_heatwave.md).
+
+First pass: storms over heatwave water cool the sea more (-0.57 °C
+[-0.86, -0.25]; about half of that remains after allowing for heatwaves
+decaying anyway) and end most of the heatwaves they cross. Whether the heatwave changes
+the plankton bloom afterwards is not settled: the pre-registered test gives
+-0.058 [-0.125, +0.004] (log10 chlorophyll), leaning towards a
+weaker bloom with the interval just including zero.
+
 ## Setup
 
 ```bash
@@ -36,6 +50,7 @@ Log in once; the credentials go to `~/.netrc`, never into this repository:
 | `picopast fetch-open` | Downloads DMI, ONI and OISST v2.1 for the box → `data/raw/` | no |
 | `picopast fetch <product> <start> <end>` | Downloads a NASA product cut to the box → `data/raw/<product>/` | yes |
 | `picopast moana-check <date>` | Compares our MOANA with NASA's Atlantic L4 file for one day | yes |
+| `picopast cyclone-heatwave [--refresh]` | Builds the storm table and runs the pre-registered cyclone–heatwave tests → `docs/reports/cyclone_heatwave.md` | no (data on disk) |
 
 Products are named in [config/picopast.yaml](config/picopast.yaml), which is
 the single place that defines the box, regions, seasons, periods, matchup

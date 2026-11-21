@@ -199,6 +199,26 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+30. **Check E: Prochlorococcus fails the new pigment test (21 November;
+    `docs/reports/check_e.md`, rules in `docs/check_e_preregistration.md`, committed
+    before the test).**
+    - **New data:** no new cell counts exist in PANGAEA, BCO-DMO, gVOD or SeaBASS.
+      SeaBASS holds HPLC pigments: 149 surface station-days in the box from 12
+      cruises (CLIVAR 2007, Tara 2010, GO-SHIP I07N 2018, EKAMSAT 2023 and 2024,
+      GO-BGC 2023, Bio-GO-SHIP I09N 2025, SO-PACE TN444 2025, OceanX 2025).
+    - **Result:** Route D's *Prochlorococcus* record vs divinyl chlorophyll a,
+      same 8-day period, 2012 on: ρ −0.07 [−0.30, +0.16] (69 stations, 6
+      cruises), *not consistent*; the same-month pattern −0.02. Chlorophyll alone
+      and MOANA fail it too. **Binding decision: *Prochlorococcus* is exploratory.**
+    - **Why (post hoc):** the pigment follows total chlorophyll (ρ 0.76); the
+      1991–2005 cell counts fall where chlorophyll rises. Cells and pigment rank
+      stations in opposite ways here, so the two pre-registered tests disagree.
+    - **To settle it:** *Prochlorococcus* cell counts from 2012 on (NIO Goa and
+      the EKAMSAT/BoBBLE groups are the likeliest holders). *Synechococcus* is
+      untested by check E (zeaxanthin is shared; no new counts) and stays a
+      relative index on check C.
+    - Also fixed: the HPLC reader now reads three SeaBASS layouts, and rows
+      without a sample ID are no longer merged (PACE-era count unchanged, 27).
 29. **Route D record for the cyanobacteria, 2012–2026 (21 November;
     `docs/reports/route_d_reconstruction.md`, overview in `docs/reports/comparison.md`).**
     `picopast route-d-reconstruct`: D2 rebuilt *Synechococcus* and

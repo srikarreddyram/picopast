@@ -211,6 +211,35 @@ def _partial(s: dict) -> str:
     return f"{s['partial']:+.2f} [{s['partial_lo']:+.2f}, {s['partial_hi']:+.2f}]"
 
 
+def diagnostics(cfg: Config) -> list[str]:
+    """Why the pigment ranks against nothing. Looked at AFTER the verdict; never used to change it."""
+    from scipy.stats import spearmanr
+
+    m = pd.read_csv(cfg.path("interim") / "check_e" / "matchups_pro.csv", parse_dates=["time_utc"])
+    ok = m["tchl"].gt(0) & m["dv_chl_a"].gt(0)
+    share = (m["dv_chl_a"] / m["tchl"])[ok]
+    rho_t = spearmanr(m.loc[ok, "dv_chl_a"], m.loc[ok, "tchl"])[0]
+    per = []
+    for c, g in m[m["rec_D"].notna()].groupby("cruise"):
+        if len(g) >= 5:
+            per.append(f"{c} {spearmanr(g['rec_D'], g['dv_chl_a'])[0]:+.2f} (n {len(g)})")
+    return ["## Why the pigment test fails (post hoc, not part of the verdict)", "",
+            "These were looked at after the verdict above and do not change it.", "",
+            f"- Divinyl chlorophyll a at these stations spans only {m['dv_chl_a'].min():.3f}–"
+            f"{m['dv_chl_a'].max():.3f} mg m⁻³ and follows **total** chlorophyll a measured on the same samples "
+            f"(Spearman ρ = {rho_t:.2f}, n {int(ok.sum())}; *Prochlorococcus*'s share of total chlorophyll a, "
+            f"median {share.median():.2f}). It is tracking overall phytoplankton biomass.",
+            "- The 1991–2005 cell counts in check C did the opposite: *Prochlorococcus* cells were most numerous "
+            "where chlorophyll was lowest (which is why chlorophyll's sign is fixed negative). Cells in richer "
+            "water hold more pigment each, so in this box the pigment and the cell count rank stations in "
+            "nearly opposite directions. No satellite field ranks the pigment: Route D, MOANA and chlorophyll "
+            "alone all fail it.",
+            "- Within single cruises the record–pigment correlation has no consistent sign: " + "; ".join(per) + ".",
+            "- So check E most likely measures the limits of divinyl chlorophyll a as a *cell-count* proxy here, "
+            "as much as the model. It is still binding: the pre-registered rule downgrades *Prochlorococcus* to "
+            "exploratory. Only new cell counts can settle which test is right.", ""]
+
+
 def report(cfg: Config) -> Path:
     res = run(cfg)
     L = ["# Check E: new, independent HPLC stations vs Route D", "",
@@ -247,6 +276,7 @@ def report(cfg: Config) -> Path:
         if gives_verdict:
             L += [f"**Verdicts:** E1 *{r['E1']['verdict']}*; E2 *{r['E2']['verdict']}*. Primary test "
                   f"({r['primary']}) → **{r['decision']}**.", ""]
+    L += diagnostics(cfg)
     L += ["## Limits", "",
           "- Pigment per cell changes with light and nutrients, so a pigment rank is not a cell-count rank.",
           "- Stations come from a handful of cruises; intervals resample whole cruises and are wide.",

@@ -1,7 +1,8 @@
 """Route D back-extension: Synechococcus and Prochlorococcus from D2, every 8-day period 2012-2026.
 
 The pre-registered decision (docs/route_d_preregistration.md): both groups
-passed check C with D2, so both are reconstructed from D2 as a relative index.
+passed check C with D2, so both are reconstructed from D2. Synechococcus is a relative index;
+Prochlorococcus failed check E (HPLC pigments, docs/reports/check_e.md) and is exploratory.
 Per 8-day period the inputs are OISST (period mean), VIIRS chlorophyll and PAR
 (8-day composites), WOA23 nitrate (month of the period's middle day) and
 season. A pixel is *reliable* when every input lies inside the 1-99%
@@ -236,6 +237,14 @@ def reconstruct(cfg: Config, sensor: str = "snpp", refresh: bool = False) -> dic
 
 # ---------------------------------------------------------------- analysis and report
 
+#: Tier of each Route D record. Prochlorococcus passed check C (1991-2005 counts) but failed the
+#: pre-registered check E (2007-2025 HPLC divinyl chlorophyll a, docs/reports/check_e.md), so the
+#: binding rule makes it exploratory.
+TIERS = {"syn": "relative index (Route D): passed check C",
+         "pro": "exploratory (Route D): passed check C, failed check E"}
+TIER_SHORT = {"syn": "relative index (Route D: passed check C)",
+              "pro": "EXPLORATORY (Route D: passed check C, failed check E)"}
+
 REGION_LABELS = {"study_box": "Study box", "bay_of_bengal": "Bay of Bengal",
                  "arabian_sea_central_east": "Arabian Sea C/E"}
 COLORS = {"study_box": "#2a78d6", "bay_of_bengal": "#eb6834", "arabian_sea_central_east": "#1baf7a"}
@@ -328,7 +337,7 @@ def plot_series(z: pd.DataFrame, out: Path, title: str) -> Path:
         for y, x, label in ends:
             ax.annotate(label, (x, y), xytext=(6, 0), textcoords="offset points", va="center", fontsize=8,
                         color=ink, annotation_clip=False)
-        ax.set_title(f"{NAMES[g]} — relative index (Route D: passed check C)", loc="left", fontsize=10, color=ink)
+        ax.set_title(f"{NAMES[g]} — {TIER_SHORT[g]}", loc="left", fontsize=10, color=ink)
         ax.axhline(0, color=muted, lw=0.6)
         ax.grid(axis="y", color="#e4e3dc", lw=0.6)
         ax.set_ylabel("index (SD)", fontsize=8, color=muted)
@@ -368,15 +377,24 @@ def report(cfg: Config, refresh: bool = False) -> Path:
     L = ["# Route D back-extension: Synechococcus and Prochlorococcus, 2012–2026", "",
          f"Generated {date.today().isoformat()} by `picopast route-d-reconstruct`. The pre-registered decision "
          "(`docs/route_d_preregistration.md`): both groups passed check C with D2 (`route_d.md`), so both are "
-         "reconstructed from D2 as a **relative index**. Per 8-day period: OISST, VIIRS chlorophyll and PAR, WOA23 "
+         "reconstructed from D2. *Synechococcus* is a **relative index**. *Prochlorococcus* then failed the "
+         "pre-registered check E against 2007–2025 HPLC divinyl chlorophyll a (`check_e.md`) and is "
+         "**exploratory**. Per 8-day period: OISST, VIIRS chlorophyll and PAR, WOA23 "
          "nitrate for the month, season. Reliable pixels: every input inside the 1–99% importance-weighted range "
          "of the training samples. Index = SD units of the whole record.", "",
-         "| group | check C ρ, D2 | check C ρ, MOANA | training stations (effective n) | 8-day periods | "
-         "reliable share of valid pixels |", "| --- | --- | --- | --- | --- | --- |"]
+         "| group | tier | check C ρ, D2 | check C ρ, MOANA | check E (record vs HPLC pigment) | "
+         "training stations (effective n) | 8-day periods | reliable share of valid pixels |",
+         "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+    e_path = cfg.path("interim") / "check_e" / "results.json"
+    e_res = json.loads(e_path.read_text()) if e_path.exists() else {}
     for g in GROUPS:
         r = res["groups"][g]
         q = regional[(regional["region"] == "study_box") & (regional["series"] == g)]
-        L.append(f"| {NAMES[g]} | {r['D2']['stats']['rho']:.2f} | {r['moana_stats']['rho']:.2f} | "
+        e = e_res.get(g, {}).get("E2", {})
+        e_txt = (f"{e['record']['rho']:+.2f} [{e['record']['lo']:+.2f}, {e['record']['hi']:+.2f}], "
+                 f"*{e['verdict']}*" if "verdict" in e else "no verdict (zeaxanthin is shared; no new counts)")
+        L.append(f"| {NAMES[g]} | {TIERS[g].split(' (')[0]} | {r['D2']['stats']['rho']:.2f} | "
+                 f"{r['moana_stats']['rho']:.2f} | {e_txt} | "
                  f"{meta['train'][g]['n_train']:,} ({meta['train'][g]['ess']:.0f}) | {meta['n_periods']} | "
                  f"{q['n'].sum() / q['n_valid'].sum():.0%} |")
     L += ["", "![series](figures/route_d_series.png)", "",
@@ -471,7 +489,7 @@ def report(cfg: Config, refresh: bool = False) -> Path:
                  f"{w.difference:+.2f} [{w.lo:+.2f}, {w.hi:+.2f}] |")
     maps = map_composites(cfg, "snpp")
     maps_all = map_composites(cfg, "snpp", pixels="all")
-    tiers = {g: "relative index (Route D): passed check C" for g in GROUPS}
+    tiers = TIERS
     cm.plot(maps, ("syn", "syn_nosst", "pro", "pro_nosst"), tiers, figs / "route_d_climate_maps.png",
             "Cyanobacteria (Route D) during climate events, VIIRS SNPP 2012–2026, 0.25° cells (dots: 95% interval "
             "excludes zero); each group with and without SST")

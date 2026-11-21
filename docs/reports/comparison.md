@@ -40,7 +40,8 @@ Paired differences on the same stations (cruise-resampled):
 | D2 given chlorophyll (partial ρ) | 0.23 [−0.07, 0.49] | **0.38 [0.12, 0.48]** | 0.13 [−0.10, 0.26] |
 
 - **Improved:** *Synechococcus* and *Prochlorococcus* went from inconclusive to
-  passing, each clearly better than MOANA.
+  passing, each clearly better than MOANA. (*Prochlorococcus* later failed check E,
+  section 5.)
 - **Not improved:** picoeukaryotes (D2 ties MOANA, so MOANA stays, as
   pre-registered).
 - **Beyond chlorophyll:** only *Synechococcus* D2 carries information that
@@ -76,7 +77,7 @@ Sources: `reconstruction.md`, `route_b.md`, `rq2_information.md`.
 
 | | picoeukaryotes (Route A, MOANA) | Synechococcus, old (Route A) | Synechococcus, Route D | Prochlorococcus, old (Route A) | Prochlorococcus, Route D |
 | --- | --- | --- | --- | --- | --- |
-| tier | relative index | exploratory | **relative index** | exploratory | **relative index** |
+| tier | relative index | exploratory | **relative index** | exploratory | exploratory (failed check E) |
 | SNPP − NOAA-20 drift, SD per decade | −0.04 [−0.06, −0.02] | +0.13 [+0.09, +0.17] | −0.03 [−0.05, +0.00] | +0.25 [+0.19, +0.30] | +0.05 [+0.01, +0.09] |
 | same, model without SST | — | — | −0.01 [−0.05, +0.01] | — | +0.05 [+0.01, +0.09] |
 | pixels inside the training range | ≈ 90% | ≈ 90% | 74% | ≈ 90% | 57% |
@@ -101,7 +102,7 @@ compares the two.
 | --- | --- | --- | --- | --- |
 | picoeukaryotes | lower: r −0.59 (ONI), −0.55 (DMI), study box. On the maps the drop is in the Arabian Sea; most of the Bay of Bengal does not move | lower almost everywhere: −0.34 mean, 96% of cells clear | none | 71–74% survives without SST; NOAA-20 maps agree (r 0.96–0.99) |
 | Synechococcus (Route D) | lower: r −0.56 (ONI), −0.60 (DMI), study box | lower: −0.56 mean, 99% of cells clear | Bay of Bengal −0.24 per decade (FDR p 0.006) | **mostly SST:** without SST r −0.41 / −0.34, heatwave map −0.25 (pattern r 0.58), trend gone (−0.10, p 0.48) |
-| Prochlorococcus (Route D) | weak: higher in the Arabian Sea after positive IOD (+0.18 mean, 22% of cells clear) | **higher**: +0.26 mean, 68% of cells clear; study box +0.15 [+0.06, +0.20] with all valid pixels | none | survives without SST (maps +0.24, pattern r 0.89): it comes through low chlorophyll and high light, not the SST input |
+| Prochlorococcus (Route D, exploratory) | weak: higher in the Arabian Sea after positive IOD (+0.18 mean, 22% of cells clear) | **higher**: +0.26 mean, 68% of cells clear; study box +0.15 [+0.06, +0.20] with all valid pixels | none | survives without SST (maps +0.24, pattern r 0.89): it comes through low chlorophyll and high light, not the SST input |
 
 What changed against the old exploratory cyanobacteria records:
 
@@ -126,29 +127,54 @@ Found while checking this:
 - **Picoeukaryote heatwave result.** It is not affected: Route A's in-range
   share is the same during heatwaves (≈ 90%).
 
+## 5. New, independent stations (check E, 21 November)
+
+Rules committed before the test (`docs/check_e_preregistration.md`); details in `check_e.md`.
+No new *Synechococcus* or *Prochlorococcus* cell counts exist in the open archives
+(PANGAEA, BCO-DMO, gVOD, SeaBASS). SeaBASS does hold HPLC pigments: 149 surface
+station-days in the box from 12 cruises (2007–2025), 127 of them from 2012 on.
+
+| test | *Prochlorococcus* vs divinyl chlorophyll a |
+| --- | --- |
+| E1, same-month pattern, Route D (D2) | −0.02 [−0.18, +0.16], 147 stations, 12 cruises |
+| E2, the record's own 8-day period | −0.07 [−0.30, +0.16], 69 stations, 6 cruises: **not consistent** |
+| chlorophyll alone / MOANA (E1) | −0.09 / −0.04 |
+
+- **Decision (binding):** *Prochlorococcus* is downgraded to exploratory.
+- **Why (post hoc):** the pigment follows total chlorophyll (ρ 0.76), while the
+  cell counts of check C fall where chlorophyll rises, so the pigment and the
+  cells rank stations in nearly opposite ways here. The two pre-registered
+  tests therefore disagree (cells pass, pigment fails), and only new cell counts
+  can settle it.
+- *Synechococcus* cannot be re-tested: zeaxanthin is shared with
+  *Prochlorococcus*, and there are no new counts. It stays a relative index on
+  check C alone.
+
 ## Which record each group uses
 
 | group | record | why |
 | --- | --- | --- |
 | picoeukaryotes | MOANA learned from VIIRS (Route A), `data/products/reconstruction/snpp_8D/` | passed check C; Route D ties it, the pre-registered rule keeps MOANA |
 | Synechococcus | Route D (D2), `data/products/reconstruction/snpp_route_d/` | passed check C, beats MOANA; climate signals mostly via SST, report the no-SST version alongside |
-| Prochlorococcus | Route D (D2), same | passed check C, beats MOANA; no better than chlorophyll alone; 57% of pixels inside the training range |
+| Prochlorococcus | Route D (D2), same — **exploratory** | passed check C (1991–2005 counts) and beats MOANA there, but failed the pre-registered check E against 2007–2025 HPLC divinyl chlorophyll a; no better than chlorophyll alone; 57% of pixels inside the training range |
 
 ## Still weak, in order of how much it limits the conclusions
 
-1. **No same-era counts.**
+1. **Prochlorococcus is exploratory again** (check E). Cell counts and pigment
+   disagree; new cell counts from 2012 on are the only way to settle it.
+2. **No same-era counts.**
    - There are no ship counts in the box after 2005.
    - Every check is against 1991–2005 climatological patterns. None tests
      year-to-year change.
-2. **Prochlorococcus training is thin.**
+3. **Prochlorococcus training is thin.**
    - Effective sample size is 41, mostly from the Pacific warm pool.
    - Training SST stops at 29.9 °C.
-3. **The Synechococcus climate links run through SST.**
+4. **The Synechococcus climate links run through SST.**
    - The Route D model learned that SST matters globally, and ENSO, the IOD
      and heatwaves are all SST signals.
    - So the no-SST version is the defensible one.
-4. **No mixed-layer depth yet** (needs the Copernicus account). It is the
+5. **No mixed-layer depth yet** (needs the Copernicus account). It is the
    obvious missing control on all three groups, and the likeliest route to
    real gains for *Prochlorococcus*.
-5. **Route A as an MLP** is untested. Any gain would be in copying MOANA, which
+6. **Route A as an MLP** is untested. Any gain would be in copying MOANA, which
    helps picoeukaryotes only.

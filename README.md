@@ -123,6 +123,12 @@ over 2012–2025 were sensor drift. *Prochlorococcus* rises during marine heatwa
 or without SST as an input. *Synechococcus* falls, but mostly through the SST input
 ([docs/reports/route_d_reconstruction.md](docs/reports/route_d_reconstruction.md)).
 
+Check E (pre-registered): 149 new HPLC pigment stations from 12 cruises (2007–2025). Route D's
+*Prochlorococcus* record does not rank divinyl chlorophyll a (ρ −0.07 [−0.30, +0.16]), so
+*Prochlorococcus* is **exploratory** again; the pigment follows total chlorophyll, opposite to the
+cell counts, so the two tests disagree and only new counts can settle it
+([docs/reports/check_e.md](docs/reports/check_e.md)). *Synechococcus* stays a relative index.
+
 **Everything side by side** (which record each group uses, and where performance
 improved): [docs/reports/comparison.md](docs/reports/comparison.md).
 

@@ -1,11 +1,11 @@
 # Route D back-extension: Synechococcus and Prochlorococcus, 2012–2026
 
-Generated 2026-11-21 by `picopast route-d-reconstruct`. The pre-registered decision (`docs/route_d_preregistration.md`): both groups passed check C with D2 (`route_d.md`), so both are reconstructed from D2 as a **relative index**. Per 8-day period: OISST, VIIRS chlorophyll and PAR, WOA23 nitrate for the month, season. Reliable pixels: every input inside the 1–99% importance-weighted range of the training samples. Index = SD units of the whole record.
+Generated 2026-11-21 by `picopast route-d-reconstruct`. The pre-registered decision (`docs/route_d_preregistration.md`): both groups passed check C with D2 (`route_d.md`), so both are reconstructed from D2. *Synechococcus* is a **relative index**. *Prochlorococcus* then failed the pre-registered check E against 2007–2025 HPLC divinyl chlorophyll a (`check_e.md`) and is **exploratory**. Per 8-day period: OISST, VIIRS chlorophyll and PAR, WOA23 nitrate for the month, season. Reliable pixels: every input inside the 1–99% importance-weighted range of the training samples. Index = SD units of the whole record.
 
-| group | check C ρ, D2 | check C ρ, MOANA | training stations (effective n) | 8-day periods | reliable share of valid pixels |
-| --- | --- | --- | --- | --- | --- |
-| Synechococcus | 0.50 | 0.18 | 4,965 (93) | 674 | 74% |
-| Prochlorococcus | 0.45 | 0.09 | 1,840 (41) | 674 | 57% |
+| group | tier | check C ρ, D2 | check C ρ, MOANA | check E (record vs HPLC pigment) | training stations (effective n) | 8-day periods | reliable share of valid pixels |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Synechococcus | relative index | 0.50 | 0.18 | no verdict (zeaxanthin is shared; no new counts) | 4,965 (93) | 674 | 74% |
+| Prochlorococcus | exploratory | 0.45 | 0.09 | -0.07 [-0.30, +0.16], *pattern not consistent* | 1,840 (41) | 674 | 57% |
 
 ![series](figures/route_d_series.png)
 

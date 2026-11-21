@@ -171,6 +171,53 @@ are shown as exploratory.
   all-storm model, descriptive.
 - No settings are tuned on these storms.
 
+## RQ3 extended to all storms with PicoPast's own records (added 22 November 2026)
+
+Added after the first results, whose RQ3 covered only the six PACE-era storms with
+data, and before any PicoPast record value was computed at a storm point. Project
+retitled at the same time: *How marine heatwaves change the phytoplankton response to
+cyclones in the North Indian Ocean*.
+
+**Records.** All are VIIRS SNPP, 8-day, 4 km, log10 cells/mL, using all valid offshore
+pixels.
+
+- *Primary: versions built without sea temperature,* so storm cooling cannot move them
+  through the model's temperature input.
+  - Picoeukaryotes: Route A retrained without SST. Same training table, features minus
+    SST and LightGBM settings as `climate.sst_free_maps`, but all valid pixels instead
+    of reliable-only, in log10 units.
+  - *Synechococcus* and *Prochlorococcus*: Route D `syn_nosst` and `pro_nosst`.
+- *Secondary:* the main records, Route A `peuk` and Route D `syn` and `pro`, which
+  include SST.
+
+**Response ΔG per group.**
+- The same points, 150 km disc, pre and post periods and 20% validity rule as the
+  bloom.
+- Pixel anomalies come from each record's own 8-day slot climatology over 2012–2026,
+  as on disk.
+- ΔG = the mean of the counted post periods minus the pre period.
+
+**Tests.** All are secondary, with storm-resampled 95% intervals. *Prochlorococcus*
+results are exploratory, because its Route D record failed check E.
+
+1. **Change after storms:** the mean ΔG per group over all points.
+   - interval above 0 → "rises after storms";
+   - below 0 → "falls";
+   - otherwise → "no detectable change".
+2. **Community shift:** the mean, per point, of Δpicoeukaryotes − Δ*Prochlorococcus* and
+   of Δ*Synechococcus* − Δ*Prochlorococcus*, where both are valid. An interval above 0
+   means the larger cells gain relative to *Prochlorococcus*.
+3. **Heatwave effect per group:** the RQ2 model with ΔG as the response, and the
+   group's own pre-period anomaly in place of the chlorophyll one. Decisions are worded
+   as for RQ2 ("weaker" or "stronger response over heatwaves", "no detectable
+   difference"), with at least 15 storms per class.
+4. **Cross-check (descriptive):** for PACE-era storms with both, whether the PicoPast
+   picoeukaryote change has the same sign as PACE MOANA's.
+
+**Limit.** These records are model estimates built from chlorophyll, light and ocean
+colour, plus SST in the secondary versions. Their changes are model-implied group
+responses, not counts, and are not independent of the RQ2 chlorophyll response.
+
 ## Known limits, stated with every result
 
 - OISST has no microwave input and under-reads cold wakes beneath cloud. The
@@ -188,3 +235,4 @@ are shown as exploratory.
 | --- | --- | --- |
 | 2026-11-22 | First version, binding | Written before any storm response was computed. |
 | 2026-11-22 | Added a post-hoc, non-binding check of cooling against far-away water with the same heatwave status on the same days (per-cell cooling, same basin, more than 750 km from any storm) | Added after the first results: heatwave water cools on its own as heatwaves decay, so part of the pre-registered cooling difference may not be the storm's. Reported beside the pre-registered result, which it does not replace. |
+| 2026-11-22 | Added RQ3 extended to all storms with PicoPast's own records (section above); project retitled to put phytoplankton first | Asked by the project lead after the first results; written before any PicoPast record value was computed at a storm point. |

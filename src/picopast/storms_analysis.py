@@ -601,7 +601,7 @@ def plot_groups(groups: dict, out: Path) -> Path:
 
     fig, ax = plt.subplots(figsize=(8, 3.8), facecolor=SURFACE)
     ax.set_facecolor(SURFACE)
-    for i, (g, r) in enumerate(groups.items()):
+    for i, r in enumerate(groups.values()):
         for dx, key, col in ((-0.12, "normal", NORM), (0.12, "heatwave", HEAT)):
             m = r[key]
             ax.errorbar(i + dx, m["mean"], yerr=[[m["mean"] - m["lo"]], [m["hi"] - m["mean"]]], fmt="o", ms=6,

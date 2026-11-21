@@ -412,6 +412,141 @@ def pace_groups(cfg: Config, pts: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+# ---------------------------------------------------------------- RQ3 extended: PicoPast's own group records
+
+#: record name -> (kind, variable). "A" = Route A (MOANA learned from VIIRS), "D" = Route D, "A0" = Route A
+#: retrained without SST (computed here). The *_nosst records are primary (pre-registration, RQ3 extended).
+GROUP_RECORDS = {"peuk_nosst": ("A0", "peuk"), "syn_nosst": ("D", "syn_nosst"), "pro_nosst": ("D", "pro_nosst"),
+                 "peuk": ("A", "peuk"), "syn": ("D", "syn"), "pro": ("D", "pro")}
+
+
+def peuk_nosst_maps(cfg: Config):
+    """Yield (period start, log10 picoeukaryote map) from Route A retrained without SST, all valid pixels.
+
+    Same training table, features minus SST and LightGBM settings as ``climate.sst_free_maps``; maps are cached
+    as float16 per period, so a second call only reads them.
+    """
+    from picopast import reconstruct as R
+
+    cache = cfg.path("interim") / "storms" / "peuk_nosst_8D"
+    periods = R.viirs_periods(cfg, "snpp")
+    files = [cache / f"{p:%Y%m%d}.npy" for p in periods["start"]]
+    if cache.exists() and all(f.exists() for f in files):
+        for p, f in zip(periods["start"], files):
+            yield p, np.load(f).astype(np.float32)
+        return
+    cache.mkdir(parents=True, exist_ok=True)
+    table = pd.read_parquet(cfg.path("interim") / "reconstruct" / "training_snpp_operational.parquet")
+    feats = [f for f in R.FEATURES["A"] if f != "sst"]
+    d = table[np.isfinite(table["peuk"])]
+    model = R._lgbm().fit(d[feats], d["peuk"].values)
+    lat, lon, offshore = R._grid_and_offshore(cfg)
+    lat2, lon2 = np.meshgrid(lat, lon, indexing="ij")
+    oisst = R.Oisst(cfg, lat, lon)
+    for p, f in zip(periods.itertuples(), files):
+        v = R.load_viirs(cfg, "snpp", p.start)
+        ok = R._inputs_valid(v, oisst.mean(p.start, p.end)) & offshore  # the same pixels as the main record
+        idx = np.flatnonzero(ok.ravel())
+        out = np.full(ok.size, np.nan, np.float32)
+        if idx.size:
+            X = R.features({k: a.ravel()[idx] for k, a in v.items()}, np.zeros(idx.size, np.float32),
+                           lat2.ravel()[idx], lon2.ravel()[idx], p.start + (p.end - p.start) / 2)
+            out[idx] = model.predict(X[feats])
+        out = out.reshape(ok.shape)
+        np.save(f, out.astype(np.float16))
+        yield p.start, out
+
+
+def _stored_record(cfg: Config, kind: str, var: str, offshore: np.ndarray):
+    """Loader start -> log10 map (NaN off the offshore mask) for a stored Route A or Route D record."""
+    base = cfg.path("products") / "reconstruction"
+
+    def load(start: pd.Timestamp):
+        f = (base / "snpp" / "8D" / f"recon_{start:%Y%m%d}.nc" if kind == "A"
+             else base / "snpp_route_d" / "8D" / f"recon_d_{start:%Y%m%d}.nc")
+        if not f.exists():
+            return None
+        with xr.open_dataset(f) as ds:
+            x = ds[var].isel(time=0).values.astype(np.float32) if "time" in ds[var].dims else ds[var].values
+        return np.where(offshore, x, np.nan)
+
+    return load
+
+
+def group_changes(cfg: Config, pts: pd.DataFrame) -> pd.DataFrame:
+    """Per point and record: pre-period anomaly and the change after the storm (log10), 150 km disc.
+
+    Anomalies are taken against each record's own per-pixel 8-day slot climatology (2012-2026 as on disk).
+    """
+    from picopast.route_d import box_fields
+
+    bf = box_fields(cfg)
+    lat, lon, offshore = bf["ds"]["lat"].values, bf["ds"]["lon"].values, bf["offshore"]
+    periods = chl_periods(cfg)
+    starts, ends = pd.DatetimeIndex(periods["start"]), pd.DatetimeIndex(periods["end"])
+    idx = _disc_flat(lat, lon, pts, offshore, (R_KM,))
+    needs, chosen = {}, {}
+    for p in pts.itertuples():
+        chosen[p.point] = pre_post(starts, ends, p.d0)
+        for role, k in zip(("pre", "post1", "post2"), chosen[p.point]):
+            if k >= 0:
+                needs.setdefault(k, []).append((p.point, R_KM, role))
+    out = pd.DataFrame({"point": pts["point"].to_numpy()})
+    cache = cfg.path("interim") / "storms" / "peuk_nosst_8D"
+    for name, (kind, var) in GROUP_RECORDS.items():
+        total = np.zeros((46,) + offshore.shape, np.float32)
+        count = np.zeros((46,) + offshore.shape, np.int16)
+        if kind == "A0":
+            source = ((s, m) for s, m in peuk_nosst_maps(cfg))
+        else:
+            load = _stored_record(cfg, kind, var, offshore)
+            source = ((s, load(s)) for s in starts)
+        kept = set(needs)
+        for s, m in source:  # pass 1: climatology
+            if m is None:
+                continue
+            ok = np.isfinite(m)
+            total[slot(s)][ok] += m[ok]
+            count[slot(s)] += ok
+        with np.errstate(invalid="ignore", divide="ignore"):
+            clim = np.where(count > 0, total / np.maximum(count, 1), np.nan).astype(np.float32)
+        del total, count
+
+        def fields(kind=kind, var=var, clim=clim, kept=kept):  # pass 2: anomalies of the needed periods only
+            load = None if kind == "A0" else _stored_record(cfg, kind, var, offshore)
+            for k in sorted(kept):
+                s = starts[k]
+                if kind == "A0":
+                    f = cache / f"{s:%Y%m%d}.npy"
+                    m = np.load(f).astype(np.float32) if f.exists() else None
+                else:
+                    m = load(s)
+                if m is not None:
+                    yield k, m - clim[slot(s)]
+
+        vals = _period_values(fields(), needs, idx)
+        pre, d = [], []
+        for p in pts.itertuples():
+            a = vals.get((p.point, R_KM, "pre"), np.nan)
+            post = [vals.get((p.point, R_KM, r), np.nan) for r in ("post1", "post2")]
+            good = [v for v in post if np.isfinite(v)]
+            pre.append(a)
+            d.append(float(np.mean(good) - a) if good and np.isfinite(a) else np.nan)
+        out[f"recpre_{name}"] = pre
+        out[f"rec_{name}"] = d
+    return out
+
+
+def add_group_changes(cfg: Config) -> pd.DataFrame:
+    """Add the RQ3-extended columns to the cached storm table (recomputing only them)."""
+    path = cfg.path("interim") / "storms" / "storm_table.parquet"
+    table = pd.read_parquet(path)
+    table = table[[c for c in table.columns if not c.startswith(("rec_", "recpre_"))]]
+    table = table.merge(group_changes(cfg, table[["point", "lat", "lon", "d0"]]), on="point", how="left")
+    table.to_parquet(path, index=False)
+    return table
+
+
 # ---------------------------------------------------------------- covariates
 
 def _ssh_files(cfg: Config) -> pd.Series:
@@ -482,7 +617,7 @@ def build(cfg: Config, refresh: bool = False) -> pd.DataFrame:
     fixes = all_fixes(cfg)
     table = pts
     for part in (ocean_state(cfg, pts, fixes), bloom(cfg, pts), pace_groups(cfg, pts), sea_level(cfg, pts),
-                 salinity(cfg, pts)):
+                 salinity(cfg, pts), group_changes(cfg, pts)):
         table = table.merge(part, on="point", how="left")
     table["heatwave"] = np.where(table["E"] >= HOT, 1.0, np.where(table["E"] < NORMAL, 0.0, np.nan))
     out.parent.mkdir(parents=True, exist_ok=True)

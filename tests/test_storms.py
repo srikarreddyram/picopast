@@ -99,3 +99,15 @@ def test_km_median_with_censoring():
     ev = np.array([1, 1, 1, 1, 0, 0], bool)
     assert km_median(t, ev) == 6.0  # S: 5/6, 4/6, 3/6 -> reaches 0.5 at day 6
     assert np.isnan(km_median(np.array([60, 60]), np.array([0, 0], bool)))
+
+
+def test_mean_ci_and_group_verdicts():
+    from picopast.storms_analysis import mean_ci, verdict_group
+
+    sids = np.repeat(np.arange(30), 4)
+    rng = np.random.default_rng(5)
+    up = mean_ci(0.2 + rng.normal(0, 0.05, sids.size), sids, n_boot=200)
+    assert up["lo"] > 0 and up["n"] == 120 and up["storms"] == 30
+    assert np.isnan(mean_ci([1.0, np.nan], [1, 2])["mean"])
+    assert verdict_group({"storms_heatwave": 20, "storms_normal": 20, "lo": -0.3, "hi": -0.1}).startswith("weaker")
+    assert verdict_group({"storms_heatwave": 9, "storms_normal": 20, "lo": -0.3, "hi": -0.1}) == "not enough data"

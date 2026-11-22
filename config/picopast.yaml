@@ -165,3 +165,6 @@ paths:
   insitu: data/insitu
   reports: docs/reports
   products: data/products
+
+storms:
+  ibtracs: NI           # IBTrACS basin list for this box

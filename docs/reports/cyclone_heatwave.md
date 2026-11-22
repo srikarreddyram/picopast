@@ -35,6 +35,33 @@ By basin and season (unadjusted means):
 | Bay of Bengal | post-monsoon | 49 (9) | 183 (28) | +0.094 | +0.160 |
 | Bay of Bengal | pre-monsoon | 44 (7) | 33 (6) | +0.134 | +0.082 |
 
+## Replication: 2002–2011 storms with MODIS-Aqua (pre-registered before it ran)
+
+460 track points from 50 storms, July 2002 to December 2011: 28 heatwave points (7 storms), 387 normal points (46 storms); bloom measurable at 300.
+
+| test | heatwave effect on the bloom [95%] | points | verdict |
+| --- | --- | --- | --- |
+| 2002–2011 alone | -0.039 [-0.185, +0.177] | 274 | *not enough data* |
+| pooled 2002–2026, era indicator | -0.052 [-0.114, +0.005] | 752 | **updated RQ2 verdict: no detectable difference** |
+
+The verdict changes only if the pooled interval excludes zero and the 2002–2011 storms alone point the same way (rule written before the run, against optional stopping).
+
+In plain terms, the pooled estimate is a bloom about 11% weaker over heatwave water, with a 95% interval from 23% weaker to 1% stronger: a large effect either way, and any strengthening beyond that upper end, is ruled out; a modest weakening is possible but not shown.
+
+Cyclones met heatwaves far more often in the later period: 6% of track points crossed heatwave water in 2002–2011 against 30% in 2012–2026. The heatwave threshold is fixed (1991–2020), so this partly reflects the warming trend itself. It is also why the earlier storms add little power: only 7 of them crossed heatwave water.
+
+| pooled sensitivity check | heatwave effect [95%] | points |
+| --- | --- | --- |
+| storm-equal weights | -0.041 [-0.098, +0.009] | 752 |
+| continuous E (0 to 1), all points | -0.061 [-0.128, +0.004] | 850 |
+| 75 km disc | -0.064 [-0.131, +0.005] | 742 |
+| 300 km disc | -0.046 [-0.105, +0.006] | 714 |
+
+RQ1 replication: cooling over heatwave water -0.74 [-1.25, -0.04] °C for 2002–2011 alone (*not enough data*), -0.61 [-0.85, -0.33] °C pooled; heatwave survival to D0+5 under storms 6% against 53% far away (-0.47 [-0.66, +0.17]).
+
+![forest](figures/cyclone_heatwave_forest.png)
+
+
 ## RQ1: cooling, heatwave ending and re-warming
 
 - **Cooling** (°C, minimum of D0 to D0+5 minus the D0−7 to D0−3 mean): heatwave effect -0.569 [-0.855, -0.249] °C, *stronger cooling over heatwaves*; unadjusted means -1.83 (heatwave) and -0.94 (normal).

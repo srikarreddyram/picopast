@@ -511,7 +511,7 @@ def report(cfg: Config, refresh: bool = False, with_replication: bool = False) -
         L.append(f"| {r['basin']} | {r['season']} | {r['points_heatwave']} ({r['storms_heatwave']}) | "
                  f"{r['points_normal']} ({r['storms_normal']}) | {r['mean_heatwave']:+.3f} | {r['mean_normal']:+.3f} |")
     if "replication" in res:
-        L += replication_section(res["replication"])
+        L += replication_section(res["replication"], res["counts"])
         plot_forest(res, figs / "cyclone_heatwave_forest.png")
         L += ["![forest](figures/cyclone_heatwave_forest.png)", ""]
     c, cr, sv, km = res["rq1_cooling"], res["rq1_cooling_raw"], res["rq1_survival"], res["rq1_rewarm"]
@@ -618,7 +618,7 @@ def plot_points(cfg: Config, table: pd.DataFrame, out: Path) -> Path:
     return out
 
 
-def replication_section(x: dict) -> list[str]:
+def replication_section(x: dict, main_counts: dict | None = None) -> list[str]:
     n, a, p = x["counts"], x["alone"], x["pooled"]
     L = ["", "## Replication: 2002–2011 storms with MODIS-Aqua (pre-registered before it ran)", "",
          f"{n['points']} track points from {n['storms']} storms, July 2002 to December 2011: {n['points_heatwave']} "
@@ -630,6 +630,18 @@ def replication_section(x: dict) -> list[str]:
          f"| pooled 2002–2026, era indicator | {_fmt(p)} | {p['n_points']} | **updated RQ2 verdict: {p['verdict']}** |",
          "", "The verdict changes only if the pooled interval excludes zero and the 2002–2011 storms alone point the same "
          "way (rule written before the run, against optional stopping).", "",
+         f"In plain terms, the pooled estimate is a bloom about {100 * (1 - 10 ** p['effect']):.0f}% weaker over heatwave "
+         f"water, with a 95% interval from {100 * (1 - 10 ** p['lo']):.0f}% weaker to "
+         f"{abs(100 * (10 ** p['hi'] - 1)):.0f}% {'stronger' if p['hi'] > 0 else 'weaker'}: a large effect either way, "
+         "and any strengthening beyond that upper end, is ruled out; a modest weakening is possible but not shown.", ""]
+    if main_counts:
+        share_old = n["points_heatwave"] / max(n["points"], 1)
+        share_new = main_counts["points_heatwave"] / max(main_counts["points"], 1)
+        L += [f"Cyclones met heatwaves far more often in the later period: {share_old:.0%} of track points crossed "
+              f"heatwave water in 2002–2011 against {share_new:.0%} in 2012–2026. The heatwave threshold is fixed "
+              "(1991–2020), so this partly reflects the warming trend itself. It is also why the earlier storms "
+              "add little power: only " + f"{n['storms_heatwave']} of them crossed heatwave water.", ""]
+    L += [
          "| pooled sensitivity check | heatwave effect [95%] | points |", "| --- | --- | --- |"]
     for label, s in x["pooled_sensitivity"].items():
         val = _fmt(s) if np.isfinite(s.get("effect", np.nan)) else "n/a"
@@ -700,18 +712,18 @@ def plot_forest(res: dict, out: Path) -> Path:
         ax.plot([e["lo"], e["hi"]], [y, y], color=col, lw=1.6 if kind != "sens" else 1.0)
         ax.plot(e["effect"], y, "o", color=col, ms=6 if kind != "sens" else 4)
     ax.axvline(0, color=MUTED, lw=0.8)
+    _axes_style(ax)  # first, so the label colours below are not overridden
     ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8)
     for t, (_, _, kind) in zip(ax.get_yticklabels(), rows[::-1]):
         t.set_color(INK if kind != "sens" else MUTED)
         t.set_fontweight("bold" if kind != "sens" else "normal")
     ax.set_xlabel("heatwave effect on the bloom (log10 chlorophyll; below 0 = weaker bloom over heatwave water)",
                   fontsize=8, color=MUTED)
-    ax.set_title("Does a heatwave change the bloom after a cyclone? Every estimate with its 95% interval",
-                 loc="left", fontsize=10, color=INK)
-    _axes_style(ax)
     ax.spines["left"].set_visible(False)
     ax.tick_params(axis="y", length=0)
-    fig.tight_layout()
+    fig.suptitle("Does a heatwave change the phytoplankton bloom after a cyclone? Every estimate, 95% intervals",
+                 x=0.01, ha="left", fontsize=10, color=INK)
+    fig.tight_layout(rect=(0, 0, 1, 0.97))
     fig.savefig(out, dpi=150, facecolor=SURFACE)
     plt.close(fig)
     return out

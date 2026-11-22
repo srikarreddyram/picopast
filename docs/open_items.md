@@ -237,10 +237,16 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       +0.45, ρ 0.73);
       the bloom less so (+0.28); heatwave inputs add
       no skill beyond plain pre-storm temperature.
-    - **Next:** a replication on 2002–2011 storms with MODIS-Aqua chlorophyll
-      (independent storms, pre-registered before it runs) to sharpen RQ2;
-      chlorophyll for October–November 2026; mixed-layer depth when the
-      Copernicus account arrives.
+    - **Replication (2002–2011, MODIS-Aqua; rules committed before it ran):** 460
+      points from 50 storms, but only 7 storms crossed heatwave water
+      (6% of points against 30% after 2012), so alone it is *not
+      enough data* (-0.039 [-0.185, +0.177]). Pooled 2002–2026:
+      -0.052 [-0.114, +0.005], i.e. a bloom about 11% weaker
+      (23% weaker to 1% stronger): **RQ2 stays *no detectable
+      difference***; large effects and strengthening are ruled out. Cooling
+      replicates: pooled -0.61 °C [-0.85, -0.33].
+    - **Next:** the write-up (report and paper draft); mixed-layer depth when
+      the Copernicus account arrives; chlorophyll for October–November 2026.
 30. **Check E: Prochlorococcus fails the new pigment test (21 November;
     `docs/reports/check_e.md`, rules in `docs/check_e_preregistration.md`, committed
     before the test).**

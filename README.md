@@ -30,6 +30,11 @@ After storms, picoeukaryotes (+0.15 log10) and *Synechococcus*
 (+0.14) rise and *Prochlorococcus* (-0.16) falls in PicoPast's
 records built without sea temperature: a shift towards larger cells, with intervals
 clear of zero. A heatwave does not detectably change that shift.
+A pre-registered replication on 50 earlier storms (2002–2011, MODIS-Aqua) cannot settle
+the bloom question either: heatwaves were rare then (6% of track points against
+30% after 2012). Pooled over 2002–2026 the bloom is about 11% weaker over
+heatwave water (95% interval: 23% weaker to 1% stronger), so no detectable
+difference; a large effect either way, and any real strengthening, are ruled out.
 
 ## Setup
 

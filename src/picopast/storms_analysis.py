@@ -354,6 +354,61 @@ def rq3_extended(prim: pd.DataFrame) -> dict:
     return out
 
 
+def _classes(df: pd.DataFrame, e_col: str) -> pd.Series:
+    return pd.Series(np.where(df[e_col] >= HOT, 1.0, np.where(df[e_col] < NORMAL, 0.0, np.nan)), index=df.index)
+
+
+def replication_verdicts(alone: dict, pooled: dict, main_effect: float) -> tuple[str, str]:
+    """(verdict for 2002-2011 alone, updated RQ2 verdict), as the replication pre-registration words them."""
+    e = alone.get("effect", np.nan)
+    if alone.get("storms_heatwave", 0) < MIN_STORMS or alone.get("storms_normal", 0) < MIN_STORMS or not np.isfinite(e):
+        v = "not enough data"
+    elif np.sign(e) == np.sign(main_effect):
+        v = "replicated" if (alone["hi"] < 0 or alone["lo"] > 0) else "same direction, not significant"
+    else:
+        v = "opposite direction"
+    clear = pooled["hi"] < 0 or pooled["lo"] > 0
+    agree = np.isfinite(e) and np.sign(e) == np.sign(pooled["effect"])
+    if clear and agree:
+        upd = "weaker bloom over heatwaves" if pooled["effect"] < 0 else "stronger bloom over heatwaves"
+    else:
+        upd = "no detectable difference"
+    return v, upd
+
+
+def replication(main: pd.DataFrame, rep: pd.DataFrame, main_effect: float) -> dict:
+    """2002-2011 MODIS-Aqua replication: alone, pooled with an era indicator, and the updated RQ2 verdict."""
+    mp, rp = main[main["primary"]].copy(), rep[rep["primary"]].copy()
+    mp["era_modis"], rp["era_modis"] = 0.0, 1.0
+    cols = sorted(set(mp.columns) & set(rp.columns))
+    pooled = pd.concat([mp[cols], rp[cols]], ignore_index=True)
+    out = {"counts": {"points": int(len(rp)), "storms": int(rp["sid"].nunique()),
+                      "points_heatwave": int((rp["heatwave"] == 1).sum()), "points_normal": int((rp["heatwave"] == 0).sum()),
+                      "storms_heatwave": int(rp.loc[rp["heatwave"] == 1, "sid"].nunique()),
+                      "storms_normal": int(rp.loc[rp["heatwave"] == 0, "sid"].nunique()),
+                      "bloom_valid": int(rp["bloom"].notna().sum())}}
+    e = effect(rp, "bloom")
+    covs = COVS + ["era_modis"]
+    pe = effect(pooled, "bloom", covs=covs)
+    v, upd = replication_verdicts(e, pe, main_effect)
+    out["alone"] = e | {"verdict": v}
+    out["alone_raw"] = raw_difference(rp, "bloom") if rp["bloom"].notna().any() else {}
+    out["pooled"] = pe | {"verdict": upd}
+    sens = {"storm-equal weights": effect(pooled, "bloom", covs=covs, weights="storm_equal"),
+            "continuous E (0 to 1), all points": effect(pooled, "bloom", exposure="E", covs=covs)}
+    for r in (75, 300):
+        s = pooled.copy()
+        s["heatwave"] = _classes(s, f"E_r{r}")
+        s["chl_pre"] = s[f"chl_pre_r{r}"]
+        sens[f"{r} km disc"] = effect(s, f"bloom_r{r}", covs=covs)
+    out["pooled_sensitivity"] = sens
+    c = effect(rp, "cooling")
+    out["rq1_cooling_alone"] = c | {"verdict": verdict_cooling(c)}
+    out["rq1_cooling_pooled"] = effect(pooled, "cooling", covs=covs)
+    out["rq1_survival_alone"] = survival_effect(rp)
+    return out
+
+
 def _fmt(e: dict, k="effect", digits=3) -> str:
     return f"{e[k]:+.{digits}f} [{e['lo']:+.{digits}f}, {e['hi']:+.{digits}f}]"
 
@@ -412,11 +467,13 @@ def excess_cooling(cfg: Config, prim: pd.DataFrame, n_boot: int = N_BOOT) -> dic
             "control_normal": float(m.loc[0.0, "control"]), "excess_normal": float(m.loc[0.0, "excess"])}
 
 
-def report(cfg: Config, refresh: bool = False) -> Path:
+def report(cfg: Config, refresh: bool = False, with_replication: bool = False) -> Path:
     from picopast import storms
 
     table = storms.build(cfg, refresh=refresh)
     res = run(cfg, table)
+    if with_replication:
+        res["replication"] = replication(table, storms.build_replication(cfg, refresh=refresh), res["rq2"]["effect"])
     work = cfg.path("interim") / "storms"
     (work / "results.json").write_text(json.dumps(res, indent=1, default=str))
     figs = cfg.path("reports") / "figures"
@@ -453,6 +510,8 @@ def report(cfg: Config, refresh: bool = False) -> Path:
     for r in res["rq2_strata"]:
         L.append(f"| {r['basin']} | {r['season']} | {r['points_heatwave']} ({r['storms_heatwave']}) | "
                  f"{r['points_normal']} ({r['storms_normal']}) | {r['mean_heatwave']:+.3f} | {r['mean_normal']:+.3f} |")
+    if "replication" in res:
+        L += replication_section(res["replication"])
     c, cr, sv, km = res["rq1_cooling"], res["rq1_cooling_raw"], res["rq1_survival"], res["rq1_rewarm"]
     L += ["", "## RQ1: cooling, heatwave ending and re-warming", "",
           f"- **Cooling** (°C, minimum of D0 to D0+5 minus the D0−7 to D0−3 mean): heatwave effect "
@@ -555,6 +614,30 @@ def plot_points(cfg: Config, table: pd.DataFrame, out: Path) -> Path:
     fig.savefig(out, dpi=150, facecolor=SURFACE)
     plt.close(fig)
     return out
+
+
+def replication_section(x: dict) -> list[str]:
+    n, a, p = x["counts"], x["alone"], x["pooled"]
+    L = ["", "## Replication: 2002–2011 storms with MODIS-Aqua (pre-registered before it ran)", "",
+         f"{n['points']} track points from {n['storms']} storms, July 2002 to December 2011: {n['points_heatwave']} "
+         f"heatwave points ({n['storms_heatwave']} storms), {n['points_normal']} normal points ({n['storms_normal']} "
+         f"storms); bloom measurable at {n['bloom_valid']}.", "",
+         "| test | heatwave effect on the bloom [95%] | points | verdict |", "| --- | --- | --- | --- |",
+         f"| 2002–2011 alone | {_fmt(a) if np.isfinite(a.get('effect', np.nan)) else 'n/a'} | {a['n_points']} | "
+         f"*{a['verdict']}* |",
+         f"| pooled 2002–2026, era indicator | {_fmt(p)} | {p['n_points']} | **updated RQ2 verdict: {p['verdict']}** |",
+         "", "The verdict changes only if the pooled interval excludes zero and the 2002–2011 storms alone point the same "
+         "way (rule written before the run, against optional stopping).", "",
+         "| pooled sensitivity check | heatwave effect [95%] | points |", "| --- | --- | --- |"]
+    for label, s in x["pooled_sensitivity"].items():
+        val = _fmt(s) if np.isfinite(s.get("effect", np.nan)) else "n/a"
+        L.append(f"| {label} | {val} | {s['n_points']} |")
+    c, cp, sv = x["rq1_cooling_alone"], x["rq1_cooling_pooled"], x["rq1_survival_alone"]
+    L += ["", f"RQ1 replication: cooling over heatwave water {_fmt(c, digits=2)} °C for 2002–2011 alone "
+          f"(*{c['verdict']}*), {_fmt(cp, digits=2)} °C pooled; heatwave survival to D0+5 under storms "
+          f"{sv.get('storm_share', np.nan):.0%} against {sv.get('control_share', np.nan):.0%} far away "
+          f"({_fmt(sv, digits=2) if np.isfinite(sv.get('effect', np.nan)) else 'n/a'}).", ""]
+    return L
 
 
 def rq3_section(x: dict, cfg: Config) -> list[str]:

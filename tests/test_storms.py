@@ -111,3 +111,24 @@ def test_mean_ci_and_group_verdicts():
     assert np.isnan(mean_ci([1.0, np.nan], [1, 2])["mean"])
     assert verdict_group({"storms_heatwave": 20, "storms_normal": 20, "lo": -0.3, "hi": -0.1}).startswith("weaker")
     assert verdict_group({"storms_heatwave": 9, "storms_normal": 20, "lo": -0.3, "hi": -0.1}) == "not enough data"
+
+
+def test_replication_verdicts_need_both_to_agree():
+    from picopast.storms_analysis import replication_verdicts
+
+    ok = {"storms_heatwave": 20, "storms_normal": 30}
+    # replication significant and pooled clear: the verdict changes
+    assert replication_verdicts(ok | {"effect": -0.08, "lo": -0.15, "hi": -0.01},
+                                {"effect": -0.07, "lo": -0.12, "hi": -0.02}, -0.058) == (
+        "replicated", "weaker bloom over heatwaves")
+    # pooled clear but the old storms point the other way: no change (guard against optional stopping)
+    assert replication_verdicts(ok | {"effect": 0.02, "lo": -0.05, "hi": 0.09},
+                                {"effect": -0.04, "lo": -0.08, "hi": -0.01}, -0.058) == (
+        "opposite direction", "no detectable difference")
+    # same direction, pooled clear: the verdict changes, the replication alone is not significant
+    assert replication_verdicts(ok | {"effect": -0.03, "lo": -0.10, "hi": 0.04},
+                                {"effect": -0.05, "lo": -0.09, "hi": -0.01}, -0.058) == (
+        "same direction, not significant", "weaker bloom over heatwaves")
+    # too few heatwave storms in 2002-2011
+    assert replication_verdicts({"storms_heatwave": 8, "storms_normal": 30, "effect": -0.1, "lo": -0.2, "hi": -0.05},
+                                {"effect": -0.06, "lo": -0.10, "hi": -0.02}, -0.058)[0] == "not enough data"

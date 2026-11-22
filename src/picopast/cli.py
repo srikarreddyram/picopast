@@ -148,7 +148,8 @@ def _check_e(args):
 def _cyclone_heatwave(args):
     from picopast import storms_analysis
 
-    print(storms_analysis.report(load_config(args.config), refresh=args.refresh).read_text())
+    print(storms_analysis.report(load_config(args.config), refresh=args.refresh,
+                                 with_replication=args.replication).read_text())
 
 
 def _route_d_reconstruct(args):
@@ -255,6 +256,7 @@ def main(argv=None):
     c.set_defaults(func=_route_d_reconstruct)
     c = sub.add_parser("cyclone-heatwave", help="when cyclones hit heatwaves: storm table, tests and report")
     c.add_argument("--refresh", action="store_true", help="rebuild the storm table instead of using the cached one")
+    c.add_argument("--replication", action="store_true", help="add the 2002-2011 MODIS-Aqua replication")
     c.set_defaults(func=_cyclone_heatwave)
     sub.add_parser("check-e", help="check E: new HPLC stations vs the Route D record (pre-registered)").set_defaults(
         func=_check_e)

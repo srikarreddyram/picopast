@@ -103,11 +103,13 @@ def all_fixes(cfg: Config) -> pd.DataFrame:
                              "WMO_WIND": "wind_imd", "DIST2LAND": "dist2land_km"})
 
 
-def track_points(cfg: Config) -> pd.DataFrame:
-    """The analysis points: 2012 on, inside the box, >= 50 km from land, >= 34 kt by JTWC (primary) or IMD."""
+def track_points(cfg: Config, start: str = "2012-01-01", end: str | None = None) -> pd.DataFrame:
+    """The analysis points: from `start` (to `end`), inside the box, >= 50 km from land, >= 34 kt by JTWC
+    (primary) or IMD. The main study starts in 2012; the replication covers 4 July 2002 to 31 December 2011."""
     t = all_fixes(cfg)
     b = cfg.box
-    keep = ((t["time"] >= pd.Timestamp("2012-01-01")) & t["lat"].between(b.lat_min, b.lat_max)
+    in_time = (t["time"] >= pd.Timestamp(start)) & (t["time"].dt.normalize() <= pd.Timestamp(end or "2100-01-01"))
+    keep = (in_time & t["lat"].between(b.lat_min, b.lat_max)
             & t["lon"].between(b.lon_min, b.lon_max) & (t["dist2land_km"] >= MIN_LAND_KM)
             & ((t["wind"] >= MIN_WIND_KT) | (t["wind_imd"] >= MIN_WIND_KT)))
     p = t[keep].copy()
@@ -126,17 +128,20 @@ def track_points(cfg: Config) -> pd.DataFrame:
 
 # ---------------------------------------------------------------- daily OISST heatwave cube
 
-def daily_ocean(cfg: Config) -> xr.Dataset:
-    """Daily OISST from November 2011: sst, ssta (vs 1991-2020), heatwave excess and heatwave flag. Cached."""
+def daily_ocean(cfg: Config, start: pd.Timestamp = CUBE_START, end: pd.Timestamp | None = None) -> xr.Dataset:
+    """Daily OISST from `start` (default November 2011) to `end`: sst, ssta (vs 1991-2020), heatwave excess and
+    heatwave flag. Heatwaves always come from the full record and the fixed 1991-2020 baseline. Cached."""
     from picopast import mhw
 
-    out = cfg.path("interim") / "storms" / "oisst_daily_mhw.nc"
+    name = ("oisst_daily_mhw.nc" if start == CUBE_START and end is None
+            else f"oisst_daily_mhw_{pd.Timestamp(start):%Y%m%d}_{pd.Timestamp(end):%Y%m%d}.nc")
+    out = cfg.path("interim") / "storms" / name
     if out.exists():
         return xr.open_dataset(out)
     paths = sorted((cfg.path("raw") / "oisst").glob("oisst_v2.1_box_*.nc"))
     src = xr.open_mfdataset(paths, combine="by_coords")["sst"]
     time = pd.DatetimeIndex(src["time"].values)
-    keep = np.asarray(time >= CUBE_START)
+    keep = np.asarray((time >= pd.Timestamp(start)) & (time <= pd.Timestamp(end or "2100-01-01")))
     tk = time[keep]
     doy = mhw.day_of_year_366(tk)
     ny, nx = src.sizes["lat"], src.sizes["lon"]
@@ -171,9 +176,9 @@ def _control_share(hot: np.ndarray, k_from: int, k_to: int, basin_mask: np.ndarr
     return float((hot[k_to][was] == 1).mean()) if was.any() else np.nan
 
 
-def ocean_state(cfg: Config, pts: pd.DataFrame, fixes: pd.DataFrame) -> pd.DataFrame:
+def ocean_state(cfg: Config, pts: pd.DataFrame, fixes: pd.DataFrame, ocean: xr.Dataset | None = None) -> pd.DataFrame:
     """Exposure, pre-storm state, cooling, heatwave survival and re-warming for every point."""
-    ocean = daily_ocean(cfg)
+    ocean = daily_ocean(cfg) if ocean is None else ocean
     time = pd.DatetimeIndex(ocean["time"].values)
     day = {d: i for i, d in enumerate(time)}
     lat, lon = ocean["lat"].values, ocean["lon"].values
@@ -258,9 +263,13 @@ def ocean_state(cfg: Config, pts: pd.DataFrame, fixes: pd.DataFrame) -> pd.DataF
 
 # ---------------------------------------------------------------- chlorophyll bloom and PACE groups
 
-def chl_periods(cfg: Config) -> pd.DataFrame:
+CHL_PREFIX = {"viirs_snpp_chl": "SNPP_VIIRS", "modis_aqua_chl": "AQUA_MODIS"}
+
+
+def chl_periods(cfg: Config, product: str = "viirs_snpp_chl") -> pd.DataFrame:
     rows = []
-    for f in sorted((cfg.path("raw") / "viirs_snpp_chl").glob("SNPP_VIIRS.*.L3m.8D.CHL.chlor_a.4km.box.nc")):
+    pattern = f"{CHL_PREFIX[product]}.*.L3m.8D.CHL.chlor_a.4km.box.nc"
+    for f in sorted((cfg.path("raw") / product).glob(pattern)):
         m = _CHL_PERIOD.search(f.name)
         rows.append((pd.Timestamp(m.group(1)), pd.Timestamp(m.group(2)), f))
     return pd.DataFrame(rows, columns=["start", "end", "path"]).sort_values("start", ignore_index=True)
@@ -270,9 +279,10 @@ def slot(start: pd.Timestamp) -> int:
     return (pd.Timestamp(start).dayofyear - 1) // 8
 
 
-def chl_climatology(cfg: Config, periods: pd.DataFrame, offshore: np.ndarray) -> np.ndarray:
+def chl_climatology(cfg: Config, periods: pd.DataFrame, offshore: np.ndarray,
+                    cache_name: str = "chl_slot_climatology.nc") -> np.ndarray:
     """Per-pixel mean log10 chlorophyll per 8-day slot (46, lat, lon), all years on disk. Cached."""
-    out = cfg.path("interim") / "storms" / "chl_slot_climatology.nc"
+    out = cfg.path("interim") / "storms" / cache_name
     if out.exists():
         return xr.open_dataarray(out).values
     total = np.zeros((46,) + offshore.shape, np.float64)
@@ -319,14 +329,15 @@ def _period_values(field_by_period, needs, idx, min_share=MIN_VALID_SHARE) -> di
     return out
 
 
-def bloom(cfg: Config, pts: pd.DataFrame) -> pd.DataFrame:
+def bloom(cfg: Config, pts: pd.DataFrame, product: str = "viirs_snpp_chl") -> pd.DataFrame:
     """Pre and post chlorophyll anomalies (log10) per point and radius, and the bloom B."""
     from picopast.route_d import box_fields
 
     bf = box_fields(cfg)
     lat, lon, offshore = bf["ds"]["lat"].values, bf["ds"]["lon"].values, bf["offshore"]
-    periods = chl_periods(cfg)
-    clim = chl_climatology(cfg, periods, offshore)
+    periods = chl_periods(cfg, product)
+    clim = chl_climatology(cfg, periods, offshore, "chl_slot_climatology.nc" if product == "viirs_snpp_chl"
+                           else f"chl_slot_climatology_{product}.nc")
     starts, ends = pd.DatetimeIndex(periods["start"]), pd.DatetimeIndex(periods["end"])
     idx = _disc_flat(lat, lon, pts, offshore, RADII)
     needs: dict = {}
@@ -618,6 +629,28 @@ def build(cfg: Config, refresh: bool = False) -> pd.DataFrame:
     table = pts
     for part in (ocean_state(cfg, pts, fixes), bloom(cfg, pts), pace_groups(cfg, pts), sea_level(cfg, pts),
                  salinity(cfg, pts), group_changes(cfg, pts)):
+        table = table.merge(part, on="point", how="left")
+    table["heatwave"] = np.where(table["E"] >= HOT, 1.0, np.where(table["E"] < NORMAL, 0.0, np.nan))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    table.to_parquet(out, index=False)
+    return table
+
+
+# ---------------------------------------------------------------- the 2002-2011 replication
+
+REPLICATION = ("2002-07-04", "2011-12-31")
+
+
+def build_replication(cfg: Config, refresh: bool = False) -> pd.DataFrame:
+    """The 2002-2011 storm table with MODIS-Aqua chlorophyll (pre-registration: replication section)."""
+    out = cfg.path("interim") / "storms" / "storm_table_2002.parquet"
+    if out.exists() and not refresh:
+        return pd.read_parquet(out)
+    pts = track_points(cfg, *REPLICATION)
+    fixes = all_fixes(cfg)
+    ocean = daily_ocean(cfg, pd.Timestamp("2001-11-01"), pd.Timestamp("2012-03-31"))
+    table = pts
+    for part in (ocean_state(cfg, pts, fixes, ocean), bloom(cfg, pts, "modis_aqua_chl"), sea_level(cfg, pts)):
         table = table.merge(part, on="point", how="left")
     table["heatwave"] = np.where(table["E"] >= HOT, 1.0, np.where(table["E"] < NORMAL, 0.0, np.nan))
     out.parent.mkdir(parents=True, exist_ok=True)

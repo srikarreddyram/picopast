@@ -512,6 +512,8 @@ def report(cfg: Config, refresh: bool = False, with_replication: bool = False) -
                  f"{r['points_normal']} ({r['storms_normal']}) | {r['mean_heatwave']:+.3f} | {r['mean_normal']:+.3f} |")
     if "replication" in res:
         L += replication_section(res["replication"])
+        plot_forest(res, figs / "cyclone_heatwave_forest.png")
+        L += ["![forest](figures/cyclone_heatwave_forest.png)", ""]
     c, cr, sv, km = res["rq1_cooling"], res["rq1_cooling_raw"], res["rq1_survival"], res["rq1_rewarm"]
     L += ["", "## RQ1: cooling, heatwave ending and re-warming", "",
           f"- **Cooling** (°C, minimum of D0 to D0+5 minus the D0−7 to D0−3 mean): heatwave effect "
@@ -674,6 +676,45 @@ def rq3_section(x: dict, cfg: Config) -> list[str]:
               f"{c['storms']} storms.", ""]
     plot_groups(x["primary"]["groups"], cfg.path("reports") / "figures" / "cyclone_heatwave_groups.png")
     return L
+
+
+def plot_forest(res: dict, out: Path) -> Path:
+    """Every estimate of the heatwave effect on the bloom, main study, replication and pooled, on one axis."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows = [("2012–2026, VIIRS (primary test)", res["rq2"], "main")]
+    rows += [(f"   {k}", v, "sens") for k, v in res["rq2_sensitivity"].items()]
+    x = res["replication"]
+    rows += [("2002–2011, MODIS-Aqua (replication)", x["alone"], "main"),
+             ("Pooled 2002–2026, era indicator", x["pooled"], "pooled")]
+    rows += [(f"   {k}", v, "sens") for k, v in x["pooled_sensitivity"].items()]
+    rows = [r for r in rows if np.isfinite(r[1].get("effect", np.nan))]
+    fig, ax = plt.subplots(figsize=(8.5, 0.32 * len(rows) + 1.2), facecolor=SURFACE)
+    ax.set_facecolor(SURFACE)
+    for i, (_label, e, kind) in enumerate(rows):
+        y = len(rows) - 1 - i
+        col = {"main": INK, "pooled": HEAT, "sens": MUTED}[kind]
+        ax.plot([e["lo"], e["hi"]], [y, y], color=col, lw=1.6 if kind != "sens" else 1.0)
+        ax.plot(e["effect"], y, "o", color=col, ms=6 if kind != "sens" else 4)
+    ax.axvline(0, color=MUTED, lw=0.8)
+    ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8)
+    for t, (_, _, kind) in zip(ax.get_yticklabels(), rows[::-1]):
+        t.set_color(INK if kind != "sens" else MUTED)
+        t.set_fontweight("bold" if kind != "sens" else "normal")
+    ax.set_xlabel("heatwave effect on the bloom (log10 chlorophyll; below 0 = weaker bloom over heatwave water)",
+                  fontsize=8, color=MUTED)
+    ax.set_title("Does a heatwave change the bloom after a cyclone? Every estimate with its 95% interval",
+                 loc="left", fontsize=10, color=INK)
+    _axes_style(ax)
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(axis="y", length=0)
+    fig.tight_layout()
+    fig.savefig(out, dpi=150, facecolor=SURFACE)
+    plt.close(fig)
+    return out
 
 
 def plot_groups(groups: dict, out: Path) -> Path:

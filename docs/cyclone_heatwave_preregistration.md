@@ -218,6 +218,57 @@ results are exploratory, because its Route D record failed check E.
 colour, plus SST in the secondary versions. Their changes are model-implied group
 responses, not counts, and are not independent of the RQ2 chlorophyll response.
 
+## Replication on 2002–2011 storms with MODIS-Aqua (added 22 November 2026)
+
+**Why and when.** Decided after the first results. For 2012–2026 the bloom effect was
+−0.058 [−0.125, +0.004], leaning weaker with the interval just reaching zero. Written
+before any 2002–2011 response was computed. Adding storms after seeing a near-miss can
+bias a study towards finding an effect, so the 2002–2011 storms are also judged on
+their own (test 3).
+
+**Storms and points.**
+- IBTrACS fixes with D0 from 4 July 2002 (the start of MODIS-Aqua) to 31 December 2011.
+- Every rule of the main study applies: JTWC ≥ 34 kt, ≥ 50 km from land, the box,
+  6-hourly fixes, 150 km discs, exposure on D0 − 3 and the same classes.
+- Points from 2012 on stay in the main study.
+
+**Data.**
+- *Chlorophyll:* MODIS-Aqua L3m 8-day chlor_a, 4 km (`MODISA_L3m_CHL`), cut to the
+  box, files from 4 July 2002 to 31 January 2012.
+  - The pixel 8-day slot climatology comes from those MODIS-Aqua files.
+  - The bloom is computed exactly as for VIIRS: pre and post periods, the 20% rule.
+- *Sea temperature and heatwaves:* the same OISST and `picopast.mhw` definition, with
+  the 1991–2020 baseline; a daily cube from 1 November 2001 to 31 March 2012.
+- *Sea level:* NASA-SSH Simple Grid v1.1 from October 2001.
+- *Not available for these years:* salinity (SMAP starts in 2015), PACE, and PicoPast's
+  group records (which start in 2012).
+
+**Tests.**
+1. **Replication (2002–2011 points only).** The RQ2 model, with storm-resampled 95%
+   intervals and at least 15 storms per class (else *not enough data*).
+   - interval excluding zero, with the same sign as 2012–2026 (negative) →
+     *replicated*;
+   - same sign but interval including zero → *same direction, not significant*;
+   - otherwise → *opposite direction*.
+2. **Pooled (2002–2026).** The RQ2 model on all points, adding an era indicator
+   (MODIS 2002–2011 = 1) that absorbs any constant offset between the sensors.
+3. **Updated RQ2 verdict.** *Weaker* (or *stronger*) *bloom over heatwaves* only if
+   both hold:
+   - the pooled interval excludes zero;
+   - the 2002–2011 estimate alone has the same sign.
+
+   Otherwise *no detectable difference* stands.
+4. **RQ1 for 2002–2011 (secondary).** The cooling model and heatwave survival,
+   reported alone and pooled with the era indicator.
+5. **Pooled sensitivity checks.** Storm-equal weights, continuous E, and 75 km and
+   300 km discs.
+
+**Limits.**
+- MODIS-Aqua and VIIRS chlorophyll differ in absolute level. The bloom is a change
+  within one sensor's anomalies, and the era indicator absorbs a constant offset.
+- 2002–2011 had fewer heatwaves (the warming trend), so its heatwave class may be
+  small.
+
 ## Known limits, stated with every result
 
 - OISST has no microwave input and under-reads cold wakes beneath cloud. The
@@ -236,3 +287,4 @@ responses, not counts, and are not independent of the RQ2 chlorophyll response.
 | 2026-11-22 | First version, binding | Written before any storm response was computed. |
 | 2026-11-22 | Added a post-hoc, non-binding check of cooling against far-away water with the same heatwave status on the same days (per-cell cooling, same basin, more than 750 km from any storm) | Added after the first results: heatwave water cools on its own as heatwaves decay, so part of the pre-registered cooling difference may not be the storm's. Reported beside the pre-registered result, which it does not replace. |
 | 2026-11-22 | Added RQ3 extended to all storms with PicoPast's own records (section above); project retitled to put phytoplankton first | Asked by the project lead after the first results; written before any PicoPast record value was computed at a storm point. |
+| 2026-11-22 | Added the 2002–2011 MODIS-Aqua replication (section above) | Decided after the first results to sharpen RQ2; written before any 2002–2011 response was computed, with a both-must-agree rule against optional stopping. |

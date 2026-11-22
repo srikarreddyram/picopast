@@ -56,6 +56,11 @@ products:
     name_pattern: "SNPP_VIIRS.*.L3m.{period}.CHL.chlor_a.4km.nc"
     variables: from_name
     box_read: chunked        # (44, 87) chunks: fetch only the box's ~2% of each file
+  modis_aqua_chl:                         # 2002-2011 replication (cyclone-heatwave study)
+    short_name: MODISA_L3m_CHL
+    name_pattern: "AQUA_MODIS.*.L3m.{period}.CHL.chlor_a.4km.nc"
+    variables: from_name
+    box_read: chunked
   viirs_snpp_kd:
     short_name: VIIRSN_L3m_KD
     name_pattern: "SNPP_VIIRS.*.L3m.{period}.KD.Kd_490.4km.nc"

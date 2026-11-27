@@ -199,6 +199,50 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+32. **Final confirmatory test, whole Indian Ocean (27 November; rules: "Final
+    confirmatory test" in `docs/cyclone_heatwave_preregistration.md`, committed
+    before any South Indian Ocean value was analysed; report:
+    `docs/reports/cyclone_heatwave_final.md`).**
+    - **Data added:** the South Indian Ocean (0–35°S, 30–120°E): 360 storms
+      from the IBTrACS SI list, OISST 1991–2026, VIIRS (2012–2026) and
+      MODIS-Aqua (2002–2012) chlorophyll.
+    - **T1 sample:** 5,974 points, 148 heatwave storms and 415 normal storms,
+      2002–2026.
+    - **T1 (decisive, 99%): *no meaningful effect*.**
+      - Effect: −0.008 [−0.030, +0.014] log10, i.e. −2% [−7%, +3%]
+        chlorophyll.
+      - The whole interval lies inside the ±0.05 threshold fixed in advance.
+      - Heterogeneity guard: the heatwave × south interaction is +0.027
+        [−0.026, +0.086], so the pooled verdict stands.
+      - Power simulation: with no true effect, this design returns "no
+        meaningful effect" 94% of the time; with −0.05, "weaker" 98%.
+    - **The north alone is still inconclusive.**
+      - North: −0.052 [−0.129, +0.024], from 27 heatwave storms.
+      - South: −0.005 [−0.026, +0.017].
+      - The pooled verdict rests mostly on the south (5,222 of the 5,974
+        points). The rule pools the regions because the interaction includes
+        zero, but the write-up must state both.
+    - **T2:** no dependence on storm power, −0.012 [−0.026, +0.003]. The
+      hypothesis predicted a positive interaction.
+    - **T3:** neither component differs: the first period −0.012, later
+      growth +0.004.
+    - **T4 (storm minus the same water in no-storm years): the storm-driven
+      bloom is slightly weaker over heatwaves.**
+      - Effect: −0.035 [−0.057, −0.011] log10, about 8% less chlorophyll
+        (2–12%); Holm p 0.016.
+      - Its estimate is below the ±0.05 threshold.
+      - Only 99 heatwave storms have a control year, because heatwave
+        conditions on the same calendar day in another year are rare.
+      - Reading (descriptive): in the south's raw means, heatwave water without
+        a storm loses less chlorophyll over those weeks (−0.008 against
+        −0.017). Part of the raw bloom over heatwaves is therefore not the
+        storm's doing.
+    - **RQ1:** cooling is stronger over heatwaves: pooled −0.41 °C [−0.52,
+      −0.29], south −0.35 °C. Storms end heatwaves: 22% of heatwave cells
+      survive under the storm against 47% far away (south: 28% against 52%).
+    - **Answer to RQ2:** across the Indian Ocean, a heatwave does not change the
+      size of the bloom by any meaningful amount. Measured against no-storm
+      years, the storm's own contribution is about 8% smaller.
 31. **New direction: when cyclones hit heatwaves (22 November; proposal doc
     "Project Proposal — When Cyclones Hit Heatwaves", survey `docs/literature_survey.md`,
     rules `docs/cyclone_heatwave_preregistration.md` committed before any response,

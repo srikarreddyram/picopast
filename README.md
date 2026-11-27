@@ -36,12 +36,24 @@ the bloom question either: heatwaves were rare then (6% of track points against
 heatwave water (95% interval: 23% weaker to 1% stronger), so no detectable
 difference; a large effect either way, and any real strengthening, are ruled out.
 
+**Definitive test (27 November 2026): no meaningful effect.**
+- **Design:** the pre-registered final test adds the South Indian Ocean (360 more
+  storms) and is judged on a 99% interval.
+- **Result:** across 563 storms with a usable bloom, the heatwave effect on the bloom
+  is −0.008 [−0.030, +0.014] log10 (−2% chlorophyll, between −7% and +3%). The whole
+  interval lies inside the ±0.05 threshold fixed beforehand.
+- **Caveats:**
+  - The North Indian Ocean on its own remains inconclusive (27 heatwave storms).
+  - Measured against the same water in years without a storm, the storm's own
+    contribution is about 8% smaller over heatwaves (2–12%, Holm p 0.016).
+- Report: [docs/reports/cyclone_heatwave_final.md](docs/reports/cyclone_heatwave_final.md).
+
 ## Setup
 
 ```bash
 uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
-.venv/bin/python -m pytest          # 55 tests, no network
+.venv/bin/python -m pytest          # 87 tests, no network
 ```
 
 NASA downloads need a free Earthdata account (<https://urs.earthdata.nasa.gov>).
@@ -61,6 +73,8 @@ Log in once; the credentials go to `~/.netrc`, never into this repository:
 | `picopast fetch <product> <start> <end>` | Downloads a NASA product cut to the box → `data/raw/<product>/` | yes |
 | `picopast moana-check <date>` | Compares our MOANA with NASA's Atlantic L4 file for one day | yes |
 | `picopast cyclone-heatwave [--refresh]` | Builds the storm table and runs the pre-registered cyclone–heatwave tests → `docs/reports/cyclone_heatwave.md` | no (data on disk) |
+| `picopast final-test [--build]` | Final confirmatory test over the whole Indian Ocean (T1–T5) → `docs/reports/cyclone_heatwave_final.md` | no (data on disk) |
+| `picopast virtual [--workers 6]` | Column-model virtual experiments, each storm with and without its heatwave → `docs/reports/virtual_experiments.md` | no (data on disk) |
 
 Products are named in [config/picopast.yaml](config/picopast.yaml), which is
 the single place that defines the box, regions, seasons, periods, matchup

@@ -250,9 +250,12 @@ def validation(runs: pd.DataFrame) -> dict:
 
 def report(cfg_n: Config, cfg_s: Config | None, workers: int = 6) -> Path:
     res = {}
+    outputs = ["cooling", "bloom", "int_chl_change", "mld_max", "n_surface_rise"]
     for variant in VARIANTS:
         runs = experiment(cfg_n, cfg_s, variant, workers)
-        res[variant] = {"heatwave_points": paired(runs, 1.0), "normal_points": paired(runs, 0.0)}
+        res[variant] = {"heatwave_points": paired(runs, 1.0), "normal_points": paired(runs, 0.0),
+                        "runs": int(len(runs)),
+                        "runs_non_finite": int((~np.isfinite(runs[outputs].to_numpy(float))).any(axis=1).sum())}
         if variant == "base":
             res["validation"] = validation(runs)
     (cfg_n.path("interim") / "virtual" / "results.json").write_text(json.dumps(res, indent=1, default=float))
@@ -281,8 +284,10 @@ def report(cfg_n: Config, cfg_s: Config | None, workers: int = 6) -> Path:
     for variant in VARIANTS:
         e = res[variant]["heatwave_points"]["bloom"]
         L.append(f"| {variant} | {e['effect']:+.3f} [{e['lo']:+.3f}, {e['hi']:+.3f}] |")
-    L += ["", "Limits: one column, no advection or eddies; the heatwave enters as a warmer surface layer; fixed "
-          "literature biology.", ""]
+    L += ["", "Runs with a non-finite output: " + "; ".join(
+        f"{variant} {res[variant]['runs_non_finite']} of {res[variant]['runs']}" for variant in VARIANTS) + ".", "",
+        "Limits: one column, no advection or eddies; the heatwave enters as a warmer surface layer; fixed "
+        "literature biology.", ""]
     out = cfg_n.path("reports") / "virtual_experiments.md"
     out.write_text("\n".join(L))
     return out

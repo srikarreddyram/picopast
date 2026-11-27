@@ -38,6 +38,21 @@ def test_static_instability_is_removed():
     assert np.all(np.diff(rho[:60]) >= -1e-9)
 
 
+def test_shear_mixing_stays_bounded_over_a_density_inversion():
+    """A lighter layer under a denser one, with shear, gives a negative Richardson number. The partial mix
+    must not overshoot (found 27 November: values ran away to 1e68 in about 4% of real-storm runs)."""
+    from picopast.column_model import _gradient
+
+    col = _column()
+    col.T[60] += 2.0                         # warm (light) layer at 60 m under cooler water
+    col.u[:60] = 0.5                         # a current above it: shear across the inversion
+    lo, hi = col.T.min(), col.T.max()
+    for _ in range(50):
+        _gradient(col, 5)
+    assert np.all(np.isfinite(col.T)) and col.T.min() >= lo - 1e-9 and col.T.max() <= hi + 1e-9
+    assert np.all(np.abs(col.u) <= 0.5 + 1e-9)
+
+
 def test_wind_deepens_and_cools_more_when_stronger():
     weak, strong = _blow(_column(), 0.3), _blow(_column(), 3.0)
     assert strong.mld() > weak.mld() > 25

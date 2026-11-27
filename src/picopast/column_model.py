@@ -142,7 +142,9 @@ def _gradient(col: Column, j: int, max_iter: int = 200) -> None:
         k = int(np.argmin(rg))
         if rg[k] >= RG_CRIT:
             return
-        frac = 0.5 * (1 - rg[k] / RG_CRIT)  # PWP's partial mixing toward Rg = 0.25
+        # PWP's partial mixing toward Rg = 0.25. Capped at 1 (the pair fully mixed): below a density inversion
+        # Rg is negative and the uncapped fraction overshoots, which ran away in ~4% of real-storm runs.
+        frac = min(1.0, 0.5 * (1 - rg[k] / RG_CRIT))
         for a in col.tracers:
             d = a[k] - a[k + 1]
             a[k] -= frac * d / 2

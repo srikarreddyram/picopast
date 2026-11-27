@@ -198,11 +198,11 @@ def step(col: Column, taux: float, tauy: float, par0: float, dt: float, bio: Bio
 
 # ---------------------------------------------------------------- wind from a best track
 
-def drag(u10: np.ndarray) -> np.ndarray:
-    """Large & Pond (1981) drag coefficient, capped at 2.4e-3 for hurricane winds (Powell et al. 2003)."""
+def drag(u10: np.ndarray, cap: float = 2.4e-3) -> np.ndarray:
+    """Large & Pond (1981) drag coefficient, capped (2.4e-3 by default) for hurricane winds (Powell et al. 2003)."""
     u10 = np.asarray(u10, float)
     cd = np.where(u10 < 11, 1.2e-3, (0.49 + 0.065 * u10) * 1e-3)
-    return np.minimum(cd, 2.4e-3)
+    return np.minimum(cd, cap)
 
 
 def vortex_wind(dist_km: np.ndarray, vmax_ms: np.ndarray, rmw_km: np.ndarray, x: float = 0.6) -> np.ndarray:
@@ -214,13 +214,13 @@ def vortex_wind(dist_km: np.ndarray, vmax_ms: np.ndarray, rmw_km: np.ndarray, x:
 
 def storm_stress(t_hours: np.ndarray, storm_lat: np.ndarray, storm_lon: np.ndarray, vmax_kt: np.ndarray,
                  rmw_km: np.ndarray, lat0: float, lon0: float, south: bool = False,
-                 inflow_deg: float = 20.0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                 inflow_deg: float = 20.0, x: float = 0.6, cd_cap: float = 2.4e-3) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Wind stress (taux, tauy, N m-2) and wind speed at (lat0, lon0) from an hourly track."""
     km_per_deg = 111.2
     dy = (lat0 - storm_lat) * km_per_deg
     dx = (lon0 - storm_lon) * km_per_deg * np.cos(np.radians(lat0))
     r = np.hypot(dx, dy)
-    speed = vortex_wind(r, np.asarray(vmax_kt) * 0.5144, rmw_km)
+    speed = vortex_wind(r, np.asarray(vmax_kt) * 0.5144, rmw_km, x)
     # tangential direction: counterclockwise in the north, clockwise in the south; plus inflow toward the centre
     sign = -1.0 if south else 1.0
     th = np.arctan2(dy, dx) + sign * (np.pi / 2 + np.radians(inflow_deg))
@@ -231,7 +231,7 @@ def storm_stress(t_hours: np.ndarray, storm_lat: np.ndarray, storm_lon: np.ndarr
     fade = np.exp(-r / 500.0)
     u, v = u + 0.5 * vx * fade, v + 0.5 * vy * fade
     w = np.hypot(u, v)
-    cd = drag(w)
+    cd = drag(w, cd_cap)
     return RHO_AIR * cd * w * u, RHO_AIR * cd * w * v, w
 
 
@@ -240,13 +240,16 @@ def storm_stress(t_hours: np.ndarray, storm_lat: np.ndarray, storm_lon: np.ndarr
 def run(col: Column, taux: np.ndarray, tauy: np.ndarray, par0: float, dt: float,
         bio: Biology | None = None) -> dict[str, np.ndarray]:
     """Step through a forcing series; return daily-resolved surface temperature, surface chl and MLD."""
-    sst, chl, mld = [], [], []
+    sst, chl, mld, n0, ichl = [], [], [], [], []
     for tx, ty in zip(taux, tauy):
         step(col, float(tx), float(ty), par0, dt, bio)
         sst.append(col.T[0])
         chl.append(col.surface_chl())
         mld.append(col.mld())
-    return {"sst": np.asarray(sst), "chl": np.asarray(chl), "mld": np.asarray(mld)}
+        n0.append(col.N[0])
+        ichl.append(col.chl().sum() * col.dz)
+    return {"sst": np.asarray(sst), "chl": np.asarray(chl), "mld": np.asarray(mld), "n_surface": np.asarray(n0),
+            "int_chl": np.asarray(ichl)}
 
 
 def spin_up(col: Column, par0: float, days: float = 30.0, wind_ms: float = 5.0, dt: float = 3600.0,

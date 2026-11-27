@@ -145,6 +145,12 @@ def _check_e(args):
     print(check_e.report(load_config(args.config)).read_text())
 
 
+def _virtual(args):
+    from picopast import virtual
+
+    print(virtual.main(workers=args.workers).read_text())
+
+
 def _final_test(args):
     from picopast import final_test
 
@@ -269,6 +275,9 @@ def main(argv=None):
     c.add_argument("--boot", type=int, default=5000, help="storm-resampling draws (pre-registered: 5000)")
     c.add_argument("--power-reps", type=int, default=500, help="power-simulation runs (pre-registered: 500)")
     c.set_defaults(func=_final_test)
+    c = sub.add_parser("virtual", help="virtual experiments: each storm run with and without its heatwave (1-D model)")
+    c.add_argument("--workers", type=int, default=6, help="parallel processes")
+    c.set_defaults(func=_virtual)
     sub.add_parser("check-e", help="check E: new HPLC stations vs the Route D record (pre-registered)").set_defaults(
         func=_check_e)
     sub.add_parser("climate-maps", help="RQ5 per 0.25° cell: ENSO, IOD and heatwave composite maps").set_defaults(

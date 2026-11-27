@@ -96,12 +96,13 @@ def all_fixes(cfg: Config, lists: tuple[str, ...] | None = None) -> pd.DataFrame
     """Every 6-hourly IBTrACS fix, any strength, with translation speed, from the config's basin list
     (``storms.ibtracs``: NI for the north box, SI for the south box) or from the given lists."""
     lists = lists or (cfg.get("storms", {}).get("ibtracs", "NI"),)
-    cols = ["SID", "NAME", "ISO_TIME", "LAT", "LON", "WMO_WIND", "USA_WIND", "DIST2LAND"]
+    cols = ["SID", "NAME", "ISO_TIME", "LAT", "LON", "WMO_WIND", "USA_WIND", "USA_RMW", "DIST2LAND"]
     t = pd.concat([pd.read_csv(cfg.path("raw") / "ibtracs" / f"ibtracs.{b}.list.csv", skiprows=[1], usecols=cols,
                                low_memory=False, na_values=[" ", ""]) for b in lists], ignore_index=True)
     t["time"] = pd.to_datetime(t["ISO_TIME"], errors="coerce")
-    for c in ("LAT", "LON", "WMO_WIND", "USA_WIND", "DIST2LAND"):
+    for c in ("LAT", "LON", "WMO_WIND", "USA_WIND", "USA_RMW", "DIST2LAND"):
         t[c] = pd.to_numeric(t[c], errors="coerce")
+    t["rmw_km"] = t["USA_RMW"] * 1.852  # IBTrACS gives nautical miles
     t = t[t["time"].notna() & t["LAT"].notna() & t["LON"].notna() & (t["time"].dt.minute == 0)
           & (t["time"].dt.hour % 6 == 0)]
     t = t.sort_values(["SID", "time"]).drop_duplicates(["SID", "time"]).reset_index(drop=True)

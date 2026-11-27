@@ -74,3 +74,33 @@ def test_vortex_peaks_at_the_radius_of_maximum_wind():
     taux, tauy, speed = storm_stress(t, lat, np.full(t.size, 88.0), np.full(t.size, 90.0), np.full(t.size, 40.0),
                                      12.0, 88.0)
     assert speed.max() > 30 and np.hypot(taux, tauy).max() > 2.0
+
+
+# ---------------------------------------------------------------- the virtual-experiment pipeline (made-up data)
+
+def _fake_woa(path):
+    depth = np.array([0, 10, 20, 30, 50, 75, 100, 125, 150, 200], float)
+    lat, lon = np.array([10.5, 11.5]), np.array([87.5, 88.5])
+    shape = (12, depth.size, lat.size, lon.size)
+    T = np.broadcast_to((29 - 12 * np.clip((depth - 30) / 170, 0, 1))[None, :, None, None], shape).copy()
+    S = np.full(shape, 34.5)
+    N = np.broadcast_to((0.1 + 20 * np.clip((depth - 50) / 150, 0, 1))[None, :, None, None], shape).copy()
+    np.savez_compressed(path, T=T, S=S, N=N, lat=lat, lon=lon, depth=depth)
+    return path
+
+
+def test_simulate_runs_and_a_heatwave_column_is_warmer(tmp_path):
+    from picopast.virtual import Profiles, shift_surface, simulate
+
+    woa = _fake_woa(tmp_path / "woa.npz")
+    z, T, _, _ = Profiles.load(woa).at(5, 11.0, 88.0)
+    hot = shift_surface(z, T, 1.5)
+    assert hot[0] == pytest.approx(T[0] + 1.5) and hot[-1] == pytest.approx(T[-1])
+    assert shift_surface(z, T, 1.5, cap_m=20.0)[30] == pytest.approx(T[30])   # 61 m: below the 20 m cap
+    t = np.arange(0, 97.0)
+    track = {"t": t, "lat": np.linspace(9.0, 13.0, t.size), "lon": np.full(t.size, 88.0),
+             "vmax": np.full(t.size, 90.0), "rmw": np.full(t.size, 40.0)}
+    base = {"key": "S|1", "woa": str(woa), "month": 5, "lat": 11.0, "lon": 88.0, "track": track}
+    out = simulate(base | {"version": "actual", "dT": 0.0})
+    assert out["cooling"] < -0.3 and out["mld_max"] > 30
+    assert np.isfinite(out["bloom"]) and np.isfinite(out["int_chl_change"]) and out["n_surface_rise"] >= 0

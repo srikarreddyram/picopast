@@ -377,6 +377,82 @@ response):
 RQ1 (cooling, heatwave survival) for the South Indian Ocean alone and pooled, under the
 original rules.
 
+## Virtual experiments: the heatwave's effect with the storm held fixed (added 27 November 2026)
+
+**What.** A 1-D column model (`picopast.column_model`: PWP mixing plus NPZD biology)
+runs each selected storm twice:
+- over the real pre-storm column;
+- over the same column with the heatwave changed.
+
+The storm, the place and the date are identical, so the paired difference is the
+heatwave's effect *in the model world*. This answers the mechanism question that
+observations cannot isolate. It does not replace T1, which stays the observational
+verdict.
+
+**When.** Written before any real storm was simulated; the model was checked only on
+made-up profiles (`tests/test_column_model.py`).
+
+**Points.**
+- *Sample:* the final-test sample (north and south, 2002–2026).
+- *Selection:* for each storm and each class (heatwave E ≥ 0.5, normal E < 0.1), the one
+  point with the highest JTWC wind (ties: the earliest).
+- *Rule:* heatwave points are the primary experiment; normal points are secondary.
+
+**Columns.**
+- *Profiles:* World Ocean Atlas 2023 (1991–2020 climate normal, 1°) temperature,
+  salinity and nitrate for the month of D0, at the nearest ocean cell, on a 2 m grid to
+  200 m.
+- *Actual column:* the climatological surface layer (down to where temperature first
+  drops 0.5 °C) is shifted by the observed pre-storm OISST minus the atlas surface value,
+  tapering to zero over the next 10 m.
+- *Counterfactuals:*
+  - heatwave points (primary): the same shift minus the observed pre-storm anomaly
+    (`ssta_pre`), so the column has climatological temperature (heatwave removed);
+  - normal points (secondary): plus the median `ssta_pre` of the heatwave points in the
+    same region (heatwave added).
+- *Biology:*
+  - starting values: nitrate from the atlas; phytoplankton 0.1 mmol N m⁻³ in the top
+    100 m and 0.01 below; zooplankton and detritus 0.05;
+  - spin-up: 30 days under a light 5 m s⁻¹ rotating wind, with surface PAR fixed at
+    100 W m⁻²;
+  - each version spins up separately, so the heatwave also acts on growth through
+    temperature.
+
+**Storm forcing.**
+- *Wind:* the storm's own IBTrACS fixes (both lists), interpolated hourly from D0 − 2 to
+  D0 + 2. A modified Rankine vortex from the JTWC wind and radius of maximum wind
+  (40 km where missing), with 20° inflow and half the translation velocity added.
+  Clockwise rotation in the south.
+- *Drag and steps:* Large & Pond drag capped at 2.4 × 10⁻³; 900 s steps during the
+  storm, then 17 days of light wind at 3,600 s steps.
+
+**Outputs per run.**
+- *cooling:* minimum surface temperature over D0 to D0 + 5, minus the value at D0 − 2;
+- *bloom:* log10 of the mean surface chlorophyll (first optical depth) over D0 + 1 to
+  D0 + 16, minus log10 of the value at D0 − 2;
+- *depth-integrated chlorophyll change* to 200 m (near zero means redistribution, not
+  growth);
+- *maximum mixed-layer depth;*
+- *surface nitrate increase.*
+
+**Tests.** For each output, the mean paired difference (heatwave − no heatwave), with a
+95% storm-resampled interval (5,000 draws).
+- *Verdict:* for the bloom, and for depth-integrated chlorophyll:
+  - interval excluding zero → "in the model, a heatwave weakens (or strengthens) the
+    bloom";
+  - otherwise → "no detectable model effect".
+- *Validation (descriptive):* Spearman ρ of model against observed cooling, and model
+  against observed bloom, over the actual runs.
+- *Sensitivity checks:*
+  - anomaly confined to the top 20 m;
+  - surface PAR 60 W m⁻²;
+  - drag cap 2.0 × 10⁻³;
+  - vortex decay exponent 0.5.
+
+**Limits.** One column has no horizontal advection or eddies. The heatwave enters as a
+warmer surface layer, not as a separately observed shallower mixed layer. The biology
+uses fixed literature parameters, not ones fitted to this region.
+
 ## Known limits, stated with every result
 
 - OISST has no microwave input and under-reads cold wakes beneath cloud. The
@@ -397,3 +473,4 @@ original rules.
 | 2026-11-22 | Added RQ3 extended to all storms with PicoPast's own records (section above); project retitled to put phytoplankton first | Asked by the project lead after the first results; written before any PicoPast record value was computed at a storm point. |
 | 2026-11-22 | Added the 2002–2011 MODIS-Aqua replication (section above) | Decided after the first results to sharpen RQ2; written before any 2002–2011 response was computed, with a both-must-agree rule against optional stopping. |
 | 2026-11-27 | Added the final confirmatory test (section above): South Indian Ocean storms, a three-outcome rule with a smallest meaningful effect and a 99% interval, and secondary tests T2–T4 with a power simulation | Asked for a definitive answer after the replication; written before any South Indian Ocean value or new test was computed. Methods from `docs/methods_research.md`. |
+| 2026-11-27 | Added the virtual experiments (section above) | The simulation part of the methods plan; written before any real storm was simulated. |

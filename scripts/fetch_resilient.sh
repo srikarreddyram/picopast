@@ -9,14 +9,16 @@
 # 15 min; it gives up after 8 failures in a row with no new file (~1.5 h of outage).
 cd "${0:A:h}/.." || exit 1
 p=$1; s=$2; e=$3; per=$4; log=${5:-/dev/stdout}
-err="data/raw/.fetch_${p}_${per}_${s}.err"
-count() { ls data/raw/$p 2>/dev/null | grep -c '\.box\.nc$' }
+raw=${PICOPAST_RAW:-data/raw}            # data/raw_sio with PICOPAST_CONFIG=config/picopast_sio.yaml
+cfgarg=(); [[ -n $PICOPAST_CONFIG ]] && cfgarg=(--config $PICOPAST_CONFIG)
+err="$raw/.fetch_${p}_${per}_${s}.err"
+count() { ls $raw/$p 2>/dev/null | grep -c '\.box\.nc$' }
 fails=0
 echo "START $p $per $s..$e $(date '+%a %T')" >> $log
 while true; do
   before=$(count)
-  if .venv/bin/python -u .venv/bin/picopast fetch $p $s $e --period $per > /dev/null 2> $err; then
-    echo "DONE $p $per $s..$e $(date '+%a %T'), $(count) files in data/raw/$p" >> $log
+  if .venv/bin/python -u .venv/bin/picopast $cfgarg fetch $p $s $e --period $per > /dev/null 2> $err; then
+    echo "DONE $p $per $s..$e $(date '+%a %T'), $(count) files in $raw/$p" >> $log
     exit 0
   fi
   if (( $(count) > before )); then fails=0; else fails=$((fails + 1)); fi

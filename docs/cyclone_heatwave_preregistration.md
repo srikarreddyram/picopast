@@ -269,6 +269,114 @@ their own (test 3).
 - 2002–2011 had fewer heatwaves (the warming trend), so its heatwave class may be
   small.
 
+## Final confirmatory test: the whole Indian Ocean (added 27 November 2026)
+
+**When.** Written after the main study and the 2002–2011 replication. The pooled North
+Indian Ocean bloom effect was −0.052 [−0.114, +0.005]. This was written before any
+South Indian Ocean value was analysed, and before any test in this section was computed
+on any data. It is the last test of RQ2: its verdict is final, and no later data change
+it. Methods and sources: `docs/methods_research.md`.
+
+### Sample
+
+- **North Indian Ocean:** the existing points, 4 July 2002 to 2026 (the main and
+  replication tables).
+- **South Indian Ocean.**
+  - *Box and tracks:* 0–35°S, 30–120°E; IBTrACS v04r01 South Indian list (downloaded
+    22 November 2026).
+  - *Dates:* D0 from 4 July 2002 to the last date with data.
+  - *Rules:* the same as the north: 6-hourly fixes, JTWC ≥ 34 kt, ≥ 50 km from land,
+    150 km discs, exposure on D0 − 3, classes E ≥ 0.5 and E < 0.1.
+  - *Data:*
+    - OISST v2.1 for the box, 1991–2026, with heatwaves by the same `picopast.mhw`
+      definition and 1991–2020 baseline;
+    - VIIRS SNPP 8-day chlorophyll (2012 to September 2026) and MODIS-Aqua 8-day
+      chlorophyll (July 2002 to January 2012), each with its own pixel 8-day slot
+      climatology;
+    - NASA-SSH, as in the north.
+  - *Offshore pixels:* water is any pixel with valid chlorophyll in at least one 8-day
+    period of that sensor's files; then the same 25 km coast rule.
+  - *Seasons:* early (November–January), late (February–April), other (May–October).
+- **Pooled model.** The RQ2 covariates, with these changes:
+  - latitude enters as *absolute* latitude (distance from the equator; unchanged for
+    the north);
+  - an era indicator (MODIS);
+  - indicators for the Bay of Bengal and the South Indian Ocean (the Arabian Sea is
+    the reference);
+  - an indicator for each region-season (north pre-monsoon is the reference).
+- **Intervals:** resample whole storms, 5,000 draws, seed 0.
+
+### T1, the primary and decisive test: does a heatwave change the bloom?
+
+The pooled heatwave effect on the bloom, judged on its **99% interval**. This is the
+third look at RQ2, so α ≈ 0.05/3, rounded to 0.01. The smallest effect that matters is
+**±0.05 log10**: one third of the mean 2012–2026 north bloom (+0.15 log10), about a 12%
+change in chlorophyll.
+
+| 99% interval | Verdict |
+| --- | --- |
+| entirely below 0, and inside ±0.05 | *a small weakening, less than a third of the typical bloom* |
+| entirely below 0 (otherwise) | *weaker bloom over heatwaves* |
+| entirely above 0, and inside ±0.05 | *a small strengthening* |
+| entirely above 0 (otherwise) | *stronger bloom over heatwaves* |
+| entirely inside ±0.05, spanning 0 | *no meaningful effect* |
+| anything else | *inconclusive* |
+
+**Heterogeneity guard.** If the 95% interval of the heatwave × South Indian Ocean
+interaction excludes zero, the pooled verdict is replaced by separate north and south
+verdicts, by the same rule.
+
+### Secondary tests T2–T4
+
+These are decided at 95%, with a Holm correction across the three. p-values come from
+the bootstrap draws.
+
+**T2, mechanism: storm mixing power.**
+- *Index:* M = log(wind² / translation speed), standardised over the pooled points. It
+  is a proxy for the wind impulse a storm gives each patch of ocean.
+- *Model:* T1's model plus M and heatwave × M.
+- *Hypothesis:* heatwaves weaken blooms mainly under weak or fast storms, so the
+  interaction is above 0.
+- *Verdicts:*
+  - interaction above 0 → *confirmed*;
+  - below 0 → *the opposite: the heatwave effect grows with storm power*;
+  - otherwise → *no detectable dependence on storm power*.
+- *Also reported:* the heatwave effect at the 25th and 75th percentiles of M; the
+  sensitivity M3 = log(wind³ / speed).
+
+**T3, timing: mixed-up chlorophyll or new growth.** The heatwave effect is estimated
+separately on two parts of the response:
+- *the first post period* minus pre: the immediate signal, mostly chlorophyll mixed up
+  from below;
+- *the second post period* minus the first: later growth.
+
+Each component has its own verdict.
+
+**T4, storm-minus-no-storm control (difference-in-differences).**
+- *Control years:* every other year of the same sensor era in which the same disc
+  qualifies, judged by two conditions:
+  - no IBTrACS fix of any strength, from either list, passed within 500 km of the disc
+    centre between the pre period's start and the second post period's end;
+  - the disc had the same heatwave class on the same calendar day (D0 − 3).
+- *Control bloom:* for those years, the bloom computed on the same calendar 8-day
+  periods. The control value is their mean.
+- *Test:* T1's model on B − control.
+- *Why:* this removes what heatwave and normal water do anyway over those weeks, such
+  as heatwave decay and seasonal rebound.
+
+### T5, power simulation (descriptive; does not change any rule)
+
+Computed before T1, from the exposure counts of the full sample (exposure is not a
+response):
+- *Method:* resample the North Indian Ocean storms to the full sample's heatwave and
+  normal storm counts, plant effects of 0 and −0.05, refit T1, and repeat 500 times.
+- *Output:* the chance of each T1 outcome.
+
+### Also reported
+
+RQ1 (cooling, heatwave survival) for the South Indian Ocean alone and pooled, under the
+original rules.
+
 ## Known limits, stated with every result
 
 - OISST has no microwave input and under-reads cold wakes beneath cloud. The
@@ -288,3 +396,4 @@ their own (test 3).
 | 2026-11-22 | Added a post-hoc, non-binding check of cooling against far-away water with the same heatwave status on the same days (per-cell cooling, same basin, more than 750 km from any storm) | Added after the first results: heatwave water cools on its own as heatwaves decay, so part of the pre-registered cooling difference may not be the storm's. Reported beside the pre-registered result, which it does not replace. |
 | 2026-11-22 | Added RQ3 extended to all storms with PicoPast's own records (section above); project retitled to put phytoplankton first | Asked by the project lead after the first results; written before any PicoPast record value was computed at a storm point. |
 | 2026-11-22 | Added the 2002–2011 MODIS-Aqua replication (section above) | Decided after the first results to sharpen RQ2; written before any 2002–2011 response was computed, with a both-must-agree rule against optional stopping. |
+| 2026-11-27 | Added the final confirmatory test (section above): South Indian Ocean storms, a three-outcome rule with a smallest meaningful effect and a 99% interval, and secondary tests T2–T4 with a power simulation | Asked for a definitive answer after the replication; written before any South Indian Ocean value or new test was computed. Methods from `docs/methods_research.md`. |

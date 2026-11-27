@@ -132,3 +132,39 @@ def test_replication_verdicts_need_both_to_agree():
     # too few heatwave storms in 2002-2011
     assert replication_verdicts({"storms_heatwave": 8, "storms_normal": 30, "effect": -0.1, "lo": -0.2, "hi": -0.05},
                                 {"effect": -0.06, "lo": -0.10, "hi": -0.02}, -0.058)[0] == "not enough data"
+
+
+# ---------------------------------------------------------------- final confirmatory test (made-up numbers)
+
+def test_t1_verdicts_follow_the_preregistered_table():
+    from picopast.final_test import t1_verdict
+
+    assert t1_verdict(-0.12, -0.06) == "weaker bloom over heatwaves"
+    assert t1_verdict(-0.04, -0.01).startswith("a small weakening")
+    assert t1_verdict(-0.03, 0.04) == "no meaningful effect"
+    assert t1_verdict(-0.09, 0.01) == "inconclusive"
+    assert t1_verdict(0.06, 0.12) == "stronger bloom over heatwaves"
+
+
+def test_holm_and_bootstrap_p():
+    from picopast.final_test import holm, pvalue
+
+    adj = holm({"a": 0.01, "b": 0.04, "c": 0.03})
+    assert adj["a"] == pytest.approx(0.03) and adj["c"] == pytest.approx(0.06) and adj["b"] == pytest.approx(0.06)
+    assert pvalue(np.r_[np.full(990, 1.0), np.full(10, -1.0)]) == pytest.approx(0.02)
+    assert pvalue(np.ones(500)) == pytest.approx(1 / 500)
+
+
+def test_final_design_has_no_collinear_region_columns():
+    from picopast.final_test import design
+
+    rng = np.random.default_rng(2)
+    combos = [("Arabian Sea", "pre-monsoon"), ("Arabian Sea", "post-monsoon"), ("Bay of Bengal", "other"),
+              ("Bay of Bengal", "pre-monsoon"), ("South Indian Ocean", "SIO early"), ("South Indian Ocean", "SIO late"),
+              ("South Indian Ocean", "SIO other")]
+    rows = [{"basin": b, "season": se, "heatwave": float(rng.integers(0, 2)), "x": rng.normal(), "era_modis": 0.0}
+            for b, se in combos for _ in range(6)]
+    d = pd.DataFrame(rows)
+    X, names = design(d, ["heatwave"], ["x", "era_modis"])
+    assert "era_modis" not in names and "bay" in names and not any("South" in n for n in names)
+    assert np.linalg.matrix_rank(X) == X.shape[1]  # the south's seasons span its region: no extra indicator

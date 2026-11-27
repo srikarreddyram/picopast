@@ -47,6 +47,16 @@ def haversine_km(lat1, lon1, lat2, lon2) -> np.ndarray:
     return 2 * EARTH_KM * np.arcsin(np.sqrt(np.clip(a, 0.0, 1.0)))
 
 
+def season_south(month) -> np.ndarray:
+    """South Indian Ocean cyclone seasons: early (November-January), late (February-April), other."""
+    m = np.asarray(month)
+    return np.where((m >= 11) | (m == 1), "SIO early", np.where((m >= 2) & (m <= 4), "SIO late", "SIO other"))
+
+
+def is_south(cfg: Config) -> bool:
+    return cfg.box.lat_max <= 0
+
+
 def season(month) -> np.ndarray:
     """Pre-monsoon (March-June), post-monsoon (September-December), other."""
     m = np.asarray(month)
@@ -82,11 +92,13 @@ def pre_post(starts: pd.DatetimeIndex, ends: pd.DatetimeIndex, d0: pd.Timestamp)
 
 # ---------------------------------------------------------------- tracks
 
-def all_fixes(cfg: Config) -> pd.DataFrame:
-    """Every 6-hourly IBTrACS fix in the North Indian list, any strength, with translation speed."""
-    path = cfg.path("raw") / "ibtracs" / "ibtracs.NI.list.csv"
+def all_fixes(cfg: Config, lists: tuple[str, ...] | None = None) -> pd.DataFrame:
+    """Every 6-hourly IBTrACS fix, any strength, with translation speed, from the config's basin list
+    (``storms.ibtracs``: NI for the north box, SI for the south box) or from the given lists."""
+    lists = lists or (cfg.get("storms", {}).get("ibtracs", "NI"),)
     cols = ["SID", "NAME", "ISO_TIME", "LAT", "LON", "WMO_WIND", "USA_WIND", "DIST2LAND"]
-    t = pd.read_csv(path, skiprows=[1], usecols=cols, low_memory=False, na_values=[" ", ""])
+    t = pd.concat([pd.read_csv(cfg.path("raw") / "ibtracs" / f"ibtracs.{b}.list.csv", skiprows=[1], usecols=cols,
+                               low_memory=False, na_values=[" ", ""]) for b in lists], ignore_index=True)
     t["time"] = pd.to_datetime(t["ISO_TIME"], errors="coerce")
     for c in ("LAT", "LON", "WMO_WIND", "USA_WIND", "DIST2LAND"):
         t[c] = pd.to_numeric(t[c], errors="coerce")
@@ -116,8 +128,11 @@ def track_points(cfg: Config, start: str = "2012-01-01", end: str | None = None)
     p["primary"] = p["wind"] >= MIN_WIND_KT
     p["imd"] = p["wind_imd"] >= MIN_WIND_KT
     p["d0"] = p["time"].dt.normalize()
-    p["basin"] = np.where(p["lon"] < SPLIT_LON, "Arabian Sea", "Bay of Bengal")
-    p["season"] = season(p["time"].dt.month)
+    if is_south(cfg):
+        p["basin"], p["season"] = "South Indian Ocean", season_south(p["time"].dt.month)
+    else:
+        p["basin"] = np.where(p["lon"] < SPLIT_LON, "Arabian Sea", "Bay of Bengal")
+        p["season"] = season(p["time"].dt.month)
     doy = p["time"].dt.dayofyear.to_numpy()
     p["doy_sin"], p["doy_cos"] = np.sin(2 * np.pi * doy / 365.25), np.cos(2 * np.pi * doy / 365.25)
     p = p.reset_index(drop=True)
@@ -188,7 +203,8 @@ def ocean_state(cfg: Config, pts: pd.DataFrame, fixes: pd.DataFrame, ocean: xr.D
     hot = ocean["hot"].values
     is_ocean = np.isfinite(sst).mean(axis=0) > 0.5
     la2, lo2 = np.meshgrid(lat, lon, indexing="ij")
-    basins = {"Arabian Sea": is_ocean & (lo2 < SPLIT_LON), "Bay of Bengal": is_ocean & (lo2 >= SPLIT_LON)}
+    basins = {"Arabian Sea": is_ocean & (lo2 < SPLIT_LON), "Bay of Bengal": is_ocean & (lo2 >= SPLIT_LON),
+              "South Indian Ocean": is_ocean}
     control_cache: dict = {}
 
     def disc_mean(arr, k, cells):
@@ -329,12 +345,41 @@ def _period_values(field_by_period, needs, idx, min_share=MIN_VALID_SHARE) -> di
     return out
 
 
+def analysis_grid(cfg: Config, product: str = "viirs_snpp_chl") -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(lat, lon, offshore) of the 4 km chlorophyll grid.
+
+    North box: PicoPast's offshore mask (unchanged from the main study). South box (final test): water is any
+    pixel with valid chlorophyll in at least one 8-day period of that sensor's files, then the 25 km coast rule.
+    """
+    if not is_south(cfg):
+        from picopast.route_d import box_fields
+
+        bf = box_fields(cfg)
+        return bf["ds"]["lat"].values, bf["ds"]["lon"].values, bf["offshore"]
+    from picopast.grid import coast_mask
+
+    cache = cfg.path("interim") / "storms" / f"offshore_{product}.npz"
+    if cache.exists():
+        z = np.load(cache)
+        return z["lat"], z["lon"], z["offshore"]
+    periods = chl_periods(cfg, product)
+    water = None
+    for f in periods["path"]:
+        with xr.open_dataset(f) as ds:
+            ok = np.isfinite(ds["chlor_a"].values)
+            if water is None:
+                water, lat, lon = ok, ds["lat"].values, ds["lon"].values
+            else:
+                water |= ok
+    offshore = coast_mask(water, lat, cfg["grid"]["resolution_deg"], cfg["grid"]["coast_mask_km"])
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(cache, lat=lat, lon=lon, offshore=offshore)
+    return lat, lon, offshore
+
+
 def bloom(cfg: Config, pts: pd.DataFrame, product: str = "viirs_snpp_chl") -> pd.DataFrame:
     """Pre and post chlorophyll anomalies (log10) per point and radius, and the bloom B."""
-    from picopast.route_d import box_fields
-
-    bf = box_fields(cfg)
-    lat, lon, offshore = bf["ds"]["lat"].values, bf["ds"]["lon"].values, bf["offshore"]
+    lat, lon, offshore = analysis_grid(cfg, product)
     periods = chl_periods(cfg, product)
     clim = chl_climatology(cfg, periods, offshore, "chl_slot_climatology.nc" if product == "viirs_snpp_chl"
                            else f"chl_slot_climatology_{product}.nc")
@@ -655,4 +700,126 @@ def build_replication(cfg: Config, refresh: bool = False) -> pd.DataFrame:
     table["heatwave"] = np.where(table["E"] >= HOT, 1.0, np.where(table["E"] < NORMAL, 0.0, np.nan))
     out.parent.mkdir(parents=True, exist_ok=True)
     table.to_parquet(out, index=False)
+    return table
+
+
+# ---------------------------------------------------------------- final test: any region, both eras
+
+ERAS = {"modis": ("2002-07-04", "2011-12-31", "modis_aqua_chl", ("2001-11-01", "2012-03-31")),
+        "viirs": ("2012-01-01", None, "viirs_snpp_chl", None)}
+
+
+def build_region(cfg: Config, refresh: bool = False) -> pd.DataFrame:
+    """Both eras for one region's config (used for the South Indian Ocean in the final test)."""
+    out = cfg.path("interim") / "storms" / "storm_table_all.parquet"
+    if out.exists() and not refresh:
+        return pd.read_parquet(out)
+    fixes = all_fixes(cfg)
+    parts = []
+    for era, (start, end, product, cube) in ERAS.items():
+        pts = track_points(cfg, start, end)
+        ocean = daily_ocean(cfg) if cube is None else daily_ocean(cfg, pd.Timestamp(cube[0]), pd.Timestamp(cube[1]))
+        t = pts
+        for part in (ocean_state(cfg, pts, fixes, ocean), bloom(cfg, pts, product), sea_level(cfg, pts)):
+            t = t.merge(part, on="point", how="left")
+        t["era"] = era
+        parts.append(t)
+        del ocean
+    table = pd.concat(parts, ignore_index=True)
+    table["point"] = np.arange(len(table))  # unique across eras
+    table["heatwave"] = np.where(table["E"] >= HOT, 1.0, np.where(table["E"] < NORMAL, 0.0, np.nan))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    table.to_parquet(out, index=False)
+    return table
+
+
+NOSTORM_KM = 500.0  # T4: a control year has no storm fix within this distance of the disc centre
+
+
+def nostorm_controls(cfg: Config, pts: pd.DataFrame, product: str, ocean: xr.Dataset) -> pd.DataFrame:
+    """T4 control bloom per point: the same disc, the same calendar 8-day periods, in other years of the same
+    sensor era with no storm fix (any strength, both IBTrACS lists) within 500 km between the pre period's
+    start and the second post period's end, and the same heatwave class on the same calendar day (D0 - 3)."""
+    lat, lon, offshore = analysis_grid(cfg, product)
+    periods = chl_periods(cfg, product)
+    clim = chl_climatology(cfg, periods, offshore, "chl_slot_climatology.nc" if product == "viirs_snpp_chl"
+                           else f"chl_slot_climatology_{product}.nc")
+    starts, ends = pd.DatetimeIndex(periods["start"]), pd.DatetimeIndex(periods["end"])
+    by_key = {(s.year, slot(s)): k for k, s in enumerate(starts)}
+    years = sorted({s.year for s in starts})
+    fixes = all_fixes(cfg, ("NI", "SI"))
+    fx_t, fx_la, fx_lo = fixes["time"].to_numpy(), fixes["lat"].to_numpy(), fixes["lon"].to_numpy()
+    otime = pd.DatetimeIndex(ocean["time"].values)
+    oday = {d: i for i, d in enumerate(otime)}
+    hot = ocean["hot"].values
+    olat, olon = ocean["lat"].values, ocean["lon"].values
+    is_ocean = np.isfinite(ocean["sst"].isel(time=slice(0, 30)).values).mean(axis=0) > 0.5
+    idx = _disc_flat(lat, lon, pts, offshore, (R_KM,))
+    needs, plan = {}, {}
+    for p in pts.itertuples():
+        if not np.isfinite(getattr(p, "heatwave", np.nan)):
+            continue
+        roles = pre_post(starts, ends, p.d0)
+        if min(roles) < 0:
+            continue
+        cells = disc(olat, olon, p.lat, p.lon, R_KM, is_ocean)
+        for y in years:
+            dy = y - p.d0.year
+            if dy == 0:
+                continue
+            ks = [by_key.get((starts[k].year + dy, slot(starts[k]))) for k in roles]
+            if any(k is None for k in ks):
+                continue
+            t0, t1 = starts[ks[0]], ends[ks[2]] + pd.Timedelta(days=1)
+            near = (fx_t >= np.datetime64(t0)) & (fx_t < np.datetime64(t1))
+            if near.any() and (haversine_km(p.lat, p.lon, fx_la[near], fx_lo[near]) <= NOSTORM_KM).any():
+                continue
+            ke = oday.get((p.d0 - pd.Timedelta(days=LAG)) + pd.DateOffset(years=dy))
+            if ke is None or not cells[0].size:
+                continue
+            e = float(hot[ke][cells].mean())
+            cls = 1.0 if e >= HOT else 0.0 if e < NORMAL else np.nan
+            if cls != p.heatwave:
+                continue
+            plan.setdefault(p.point, []).append(dy)
+            for role, k in zip(("pre", "post1", "post2"), ks):
+                needs.setdefault(k, []).append((p.point, R_KM, f"{role}@{dy}"))
+
+    def fields():
+        for k in sorted(needs):
+            row = periods.iloc[k]
+            with xr.open_dataset(row.path) as ds:
+                x = ds["chlor_a"].values.astype(np.float32)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                yield k, np.where((x > 0) & offshore, np.log10(x) - clim[slot(row.start)], np.nan)
+
+    vals = _period_values(fields(), needs, idx)
+    rows = []
+    for p in pts.itertuples():
+        bs = []
+        for dy in plan.get(p.point, []):
+            pre = vals.get((p.point, R_KM, f"pre@{dy}"), np.nan)
+            post = [vals.get((p.point, R_KM, f"{r}@{dy}"), np.nan) for r in ("post1", "post2")]
+            good = [v for v in post if np.isfinite(v)]
+            if good and np.isfinite(pre):
+                bs.append(np.mean(good) - pre)
+        rows.append({"point": p.point, "bloom_control": float(np.mean(bs)) if bs else np.nan,
+                     "n_control": len(bs)})
+    return pd.DataFrame(rows)
+
+
+def add_controls(cfg: Config, table_path, eras: dict) -> pd.DataFrame:
+    """Add T4's bloom_control to a cached storm table, era by era ({era: (product, cube start, cube end)})."""
+    table = pd.read_parquet(table_path)
+    table = table[[c for c in table.columns if c not in ("bloom_control", "n_control")]]
+    parts = []
+    for era, (product, c0, c1) in eras.items():
+        sub = table if era is None else table[table["era"] == era]
+        if sub.empty:
+            continue
+        ocean = daily_ocean(cfg) if c0 is None else daily_ocean(cfg, pd.Timestamp(c0), pd.Timestamp(c1))
+        parts.append(nostorm_controls(cfg, sub, product, ocean))
+        del ocean
+    table = table.merge(pd.concat(parts, ignore_index=True), on="point", how="left")
+    table.to_parquet(table_path, index=False)
     return table

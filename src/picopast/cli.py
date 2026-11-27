@@ -145,6 +145,12 @@ def _check_e(args):
     print(check_e.report(load_config(args.config)).read_text())
 
 
+def _final_test(args):
+    from picopast import final_test
+
+    print(final_test.main(build=args.build, n_boot=args.boot, power_reps=args.power_reps).read_text())
+
+
 def _cyclone_heatwave(args):
     from picopast import storms_analysis
 
@@ -258,6 +264,11 @@ def main(argv=None):
     c.add_argument("--refresh", action="store_true", help="rebuild the storm table instead of using the cached one")
     c.add_argument("--replication", action="store_true", help="add the 2002-2011 MODIS-Aqua replication")
     c.set_defaults(func=_cyclone_heatwave)
+    c = sub.add_parser("final-test", help="final confirmatory test over the whole Indian Ocean (pre-registered)")
+    c.add_argument("--build", action="store_true", help="build the South Indian Ocean table and the T4 controls first")
+    c.add_argument("--boot", type=int, default=5000, help="storm-resampling draws (pre-registered: 5000)")
+    c.add_argument("--power-reps", type=int, default=500, help="power-simulation runs (pre-registered: 500)")
+    c.set_defaults(func=_final_test)
     sub.add_parser("check-e", help="check E: new HPLC stations vs the Route D record (pre-registered)").set_defaults(
         func=_check_e)
     sub.add_parser("climate-maps", help="RQ5 per 0.25° cell: ENSO, IOD and heatwave composite maps").set_defaults(

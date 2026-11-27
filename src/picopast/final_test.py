@@ -260,6 +260,10 @@ def run(cfg_n: Config, cfg_s: Config | None, n_boot: int = N_BOOT, power_reps: i
         if len(sub):
             rq1[name] = summary(fit(sub, "cooling", ["heatwave"], n_boot=min(n_boot, 2000)), "heatwave", 0.95)
     res["rq1_cooling"] = rq1
+    from picopast.storms_analysis import survival_effect
+
+    res["rq1_survival"] = {name: survival_effect(sub, n_boot=min(n_boot, 2000))
+                           for name, sub in (("pooled", d), ("South Indian Ocean", d[d["south"] == 1])) if len(sub)}
     return res
 
 
@@ -304,9 +308,13 @@ def report(cfg_n: Config, cfg_s: Config | None, n_boot: int = N_BOOT, power_reps
     for eff, o in p["outcomes"].items():
         L.append(f"| {eff} log10 | " + "; ".join(f"{k} {v:.0%}" for k, v in o.items()) + " |")
     L += ["", "## T2–T4: mechanism, timing and control (95%, Holm across the four)", "",
-          "| test | heatwave effect or interaction [95%] | Holm p | verdict |", "| --- | --- | --- | --- |"]
+          "The pre-registration names three secondary tests; T3 has two components with their own verdicts, so the "
+          "Holm family here has four members (the stricter reading).", "",
+          "| test | heatwave effect or interaction [95%] | Holm p | verdict | points | heatwave / normal storms |",
+          "| --- | --- | --- | --- | --- | --- |"]
     for k, v in res["secondary"].items():
-        L.append(f"| {k} | {_f(v)} | {v.get('p_holm', np.nan):.3f} | {v.get('verdict', 'n/a')} |")
+        L.append(f"| {k} | {_f(v)} | {v.get('p_holm', np.nan):.3f} | {v.get('verdict', 'n/a')} | "
+                 f"{v.get('n_points', 0)} | {v.get('storms_heatwave', 0)} / {v.get('storms_normal', 0)} |")
     t2 = res["secondary"]["T2 heatwave x mixing power"]
     if "effect_at_M" in t2:
         L += ["", "Heatwave effect on the bloom by storm mixing power (T2 model, 95%):", ""]
@@ -316,6 +324,13 @@ def report(cfg_n: Config, cfg_s: Config | None, n_boot: int = N_BOOT, power_reps
           "## RQ1: cooling over heatwave water (95%)", ""]
     for name, s in res["rq1_cooling"].items():
         L.append(f"- {name}: {_f(s, digits=2)} °C ({s.get('n_points', 0)} points)")
+    L += ["", "## RQ1: does the heatwave survive the storm? (95%)", "",
+          "At heatwave points: the share of the disc's heatwave cells on D0 − 3 still in a heatwave on D0 + 5, "
+          "under the storm vs water in the same region more than 750 km from any storm.", ""]
+    for name, s in res.get("rq1_survival", {}).items():
+        if np.isfinite(s.get("effect", np.nan)):
+            L.append(f"- {name}: {s['storm_share']:.0%} under the storm vs {s['control_share']:.0%} far away; "
+                     f"difference {_f(s, digits=2)} ({s['n_points']} points, {s['n_storms']} storms)")
     L += ["", "Heatwave share of track points by region and era: "
           + "; ".join(f"{k} {v:.0%}" for k, v in n["heatwave_share_by_region_era"].items()) + ".", ""]
     out = cfg_n.path("reports") / "cyclone_heatwave_final.md"

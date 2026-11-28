@@ -39,7 +39,7 @@ difference; a large effect either way, and any real strengthening, are ruled out
 **Definitive test (27 November 2026): no meaningful effect.**
 - **Design:** the pre-registered final test adds the South Indian Ocean (360 more
   storms) and is judged on a 99% interval.
-- **Result:** across 563 storms with a usable bloom, the heatwave effect on the bloom
+- **Result:** across 448 storms with a usable bloom, the heatwave effect on the bloom
   is −0.008 [−0.030, +0.014] log10 (−2% chlorophyll, between −7% and +3%). The whole
   interval lies inside the ±0.05 threshold fixed beforehand.
 - **Caveats:**

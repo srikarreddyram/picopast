@@ -151,6 +151,12 @@ def _virtual(args):
     print(virtual.main(workers=args.workers).read_text())
 
 
+def _heatwave_end(args):
+    from picopast import heatwave_end
+
+    print(heatwave_end.main(refresh=args.refresh, n_boot=args.boot, n_boot_years=args.boot_years).read_text())
+
+
 def _final_test(args):
     from picopast import final_test
 
@@ -275,6 +281,11 @@ def main(argv=None):
     c.add_argument("--boot", type=int, default=5000, help="storm-resampling draws (pre-registered: 5000)")
     c.add_argument("--power-reps", type=int, default=500, help="power-simulation runs (pre-registered: 500)")
     c.set_defaults(func=_final_test)
+    c = sub.add_parser("heatwave-end", help="storms end heatwaves, 1982-2026: ending rate, return, suppression")
+    c.add_argument("--refresh", action="store_true", help="rebuild the counts and the point table")
+    c.add_argument("--boot", type=int, default=5000, help="storm-resampling draws (pre-registered: 5000)")
+    c.add_argument("--boot-years", type=int, default=2000, help="year-resampling draws for W1 (pre-registered: 2000)")
+    c.set_defaults(func=_heatwave_end)
     c = sub.add_parser("virtual", help="virtual experiments: each storm run with and without its heatwave (1-D model)")
     c.add_argument("--workers", type=int, default=6, help="parallel processes")
     c.set_defaults(func=_virtual)

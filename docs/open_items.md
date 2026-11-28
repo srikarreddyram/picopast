@@ -199,6 +199,38 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+33. **Virtual experiments: each storm with and without its heatwave (28 November;
+    rules: "Virtual experiments" in `docs/cyclone_heatwave_preregistration.md`;
+    report: `docs/reports/virtual_experiments.md`).**
+    - **Model:** a 1-D column (PWP mixing plus NPZD biology), started from World
+      Ocean Atlas profiles and forced by each storm's own track.
+    - **Runs:** 484 storms (169 heatwave and 441 normal points), 1,220 runs per
+      variant, no non-finite run.
+    - **Bug found and fixed (27 November).** About 4% of the first run's
+      outputs ran away because the shear-mixing fraction overshot below
+      density inversions. The fix and what was seen before it are in the change
+      log; every variant was rerun from scratch.
+    - **In the model, a heatwave weakens the bloom:** −0.031 [−0.042, −0.021]
+      log10, about 7% less surface chlorophyll. Depth-integrated chlorophyll
+      also falls (−1.0 mg m⁻²), so this is less growth, not only
+      redistribution.
+    - **Mechanism:** the warm cap makes the column more stable.
+      - The mixed layer reaches 4.1 m less deep [3.5, 4.8].
+      - Surface nitrate rises 0.06 mmol m⁻³ less.
+      - The surface still cools 0.27 °C more, because there is more excess
+        heat to lose. This matches the observed RQ1 direction.
+    - **Symmetric:** adding the typical heatwave to normal storms gives the same
+      effect (−0.030).
+    - **Robust:** all four sensitivity variants keep the sign (−0.014 to
+      −0.035). Confining the anomaly to the top 20 m halves it.
+    - **Validation:** model against observed cooling ρ 0.51; against observed
+      bloom ρ 0.29.
+    - **Reading (descriptive):**
+      - The model's −0.031 is close to T4's observed storm-driven effect
+        (−0.035), and both lie inside the ±0.05 threshold.
+      - Heatwaves weaken the storm's bloom slightly, by suppressing mixing and
+        nutrient supply. The effect is smaller than the project defined as
+        meaningful, which is what T1 found.
 32. **Final confirmatory test, whole Indian Ocean (27 November; rules: "Final
     confirmatory test" in `docs/cyclone_heatwave_preregistration.md`, committed
     before any South Indian Ocean value was analysed; report:

@@ -48,6 +48,18 @@ difference; a large effect either way, and any real strengthening, are ruled out
     contribution is about 8% smaller over heatwaves (2–12%, Holm p 0.016).
 - Report: [docs/reports/cyclone_heatwave_final.md](docs/reports/cyclone_heatwave_final.md).
 
+**Why (virtual experiments, 28 November 2026).**
+- **Method:** a 1-D ocean column model (PWP mixing plus NPZD biology) runs 484 storms
+  (610 storm points) twice: over the real pre-storm column, and with the heatwave removed
+  (or, for normal storms, added).
+- **Result:** in the model, the heatwave weakens the bloom by about 7% (−0.031
+  [−0.042, −0.021] log10). The warm surface layer makes the water more stable: the
+  storm mixes 4 m less deep and brings up less nitrate.
+- **Agreement:** the size matches the observed storm-minus-no-storm comparison
+  (about 8%).
+- **Robustness:** every sensitivity variant keeps the sign.
+- Report: [docs/reports/virtual_experiments.md](docs/reports/virtual_experiments.md).
+
 ## Setup
 
 ```bash

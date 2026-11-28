@@ -453,6 +453,167 @@ made-up profiles (`tests/test_column_model.py`).
 warmer surface layer, not as a separately observed shallower mixed layer. The biology
 uses fixed literature parameters, not ones fitted to this region.
 
+## Storms end heatwaves: the whole record, 1982–2026 (added 28 November 2026)
+
+**When.** Written after the final test and the virtual experiments. RQ2 stays closed;
+nothing here is about the bloom. This section asks how much cyclones shape the region's
+heatwaves: how often they end them, how long the ocean stays clear afterwards, and
+whether stronger storms do more.
+
+**Already seen (disclosed).**
+- Heatwave survival to D0 + 5 for 2002–2026 points: 22% under storms against 47% far
+  away (−0.25 [−0.30, −0.19], final test, both regions pooled). Also the 2012–2026 and
+  2002–2011 North Indian Ocean values, and the re-warming medians of the main study.
+- Point counts, made on 28 November before any response (JTWC ≥ 34 kt, the usual point
+  rules):
+  - 1982–2001: 99 north storms (948 points), 312 south storms (5,869 points);
+  - 2002–2026: 135 north storms (1,376 points), 371 south storms (6,726 points).
+- Not yet computed for any cell, day or storm: the daily ending rate, return time,
+  heatwave occupancy after a storm, the dose-response, and any 1982–2001 response.
+
+**Data.**
+- *Sea temperature:* OISST v2.1 box files, 1982–2026, both boxes. The 1982–1990 files
+  were downloaded on 28 November.
+- *Heatwave flags:* `picopast.mhw` over the whole 1982–2026 record, with the same fixed
+  1991–2020 baseline, so the thresholds do not change.
+- *Tracks:* IBTrACS v04r01, North and South Indian lists, as on disk.
+- *Ocean cells:* cells with a valid temperature on more than half the days.
+- *Basins:* Arabian Sea (west of 77.5°E), Bay of Bengal (east of it), South Indian Ocean.
+
+### W1, the primary test: how much more often does a heatwave end under a storm?
+
+- **Unit: hot cell-days.** An ocean cell in a heatwave on day t, from 1 January 1982 to
+  the second-last day of the record.
+- **Ending.** The cell is not in a heatwave on day t + 1. The flags already bridge
+  gaps of up to two days, so a brief dip does not count as an ending.
+- **Storm exposure.** Any 6-hourly fix with JTWC wind of 34 kt or more lies within
+  150 km of the cell centre on UTC day t − 1, t or t + 1. Distance to land does not
+  matter here; only the cell must be ocean.
+- **Strata.** Basin × calendar month of t × 5° latitude band.
+- **Rate ratio (Mantel–Haenszel).** Write a for endings and n for hot cell-days, with
+  1 for exposed and 0 for unexposed, in stratum s:
+  - HR = Σₛ a₁n₀/(n₀ + n₁) ÷ Σₛ a₀n₁/(n₀ + n₁).
+- **Storm-caused endings:** Σₛ (a₁ − n₁·a₀/n₀).
+- **Attributable share.**
+  - The primary share: storm-caused endings ÷ all endings.
+  - Also reported: storm-caused endings ÷ exposed endings.
+- **Reported for:** north, south, and both pooled (strata kept separate).
+- **Intervals.** Resample calendar years 1982–2026 with replacement (2,000 draws,
+  seed 0), with counts summed within year × stratum. Heatwaves persist within a year,
+  so cell-days are not independent; years are the resampled block.
+- **Verdict** (pooled is the primary result; north and south are each also given one):
+  - the 95% interval of HR above 1 → *storms make heatwaves end more often*;
+  - below 1 → *less often*;
+  - otherwise → *no detectable difference*.
+- **Sensitivities** (reported; they do not change the verdict):
+  - a 75 km and a 300 km radius;
+  - the exposure window t to t + 1 only, and t − 3 to t + 1;
+  - in the north, IMD wind (`WMO_WIND`) of 34 kt or more instead of JTWC;
+  - each era alone (1982–2001, 2002–2026);
+  - by wind class (strongest fix in the window 34–63 kt, or 64 kt and above), each
+    against unexposed cell-days.
+
+### Track points and their controls
+
+- **Points.** The main study's rules for both boxes, now from 1 January 1982 to the
+  last date with data:
+  - fixes inside the box, at least 50 km from land, JTWC wind of 34 kt or more;
+  - D0 is the fix's UTC date; 150 km discs;
+  - E is the share of disc cells in a heatwave on D0 − 3;
+  - heatwave points have E ≥ 0.5.
+  A point needs every day its measure uses to lie inside the record.
+- **Far-away control,** as pre-registered on 22 November: cells in the point's basin
+  more than 750 km from every fix (any strength) of every storm active between
+  D0 − 10 and D0 + 10.
+- **Intervals:** resample whole storms, 5,000 draws, seed 0.
+
+### Secondary tests S1–S4
+
+These are decided at 95%, with a Holm correction across the four. p-values come from the
+bootstrap draws (two-sided, never below 1 / number of draws).
+
+**S1, replication in the earlier era (1982–2001).**
+- *Measure:* the survival effect exactly as pre-registered. For each heatwave point:
+  (share of the disc's D0 − 3 heatwave cells still in a heatwave on D0 + 5) minus the
+  same share for the control cells. The effect is the mean over heatwave points with D0
+  in 1982–2001, both regions pooled.
+- *Verdict:* interval wholly below 0 → *replicated*; otherwise → *not replicated*.
+
+**S2, return time: how long until a heatwave comes back?**
+- *Storm value:* for each heatwave point, take the disc cells in a heatwave on D0 − 3
+  and not on D0 + 5. Count the days from D0 to each cell's next heatwave day after
+  D0 + 5, capped at 240 days (about eight months, the longest suppression reported in
+  the Pacific). Average over those cells.
+- *Control value:* the same for the control cells in a heatwave on D0 − 3 and not on
+  D0 + 5.
+- *Effect:* the mean of (storm − control) over heatwave points that have both values
+  and whose D0 + 240 lies inside the record.
+- *Smallest meaningful difference:* ±10 days.
+- *Verdicts:*
+  - interval wholly above 0 → *storms keep heatwaves away longer* (adding "by less than
+    10 days" if the upper end is below 10);
+  - wholly below 0 → *heatwaves ended by storms come back sooner*;
+  - inside ±10 days → *no meaningful difference*;
+  - otherwise → *inconclusive*.
+
+**S3, suppression in the next month (all points, heatwave or not).**
+- *Occupancy:* the share of disc cell-days in a heatwave from D0 + 6 to D0 + 35.
+- *Control:* the control cells' occupancy, computed separately for cells in a heatwave
+  on D0 − 3 and cells not in one, then weighted by the disc's E and 1 − E.
+- *Effect:* the mean of (storm − control) over points whose D0 + 35 lies inside the
+  record and whose needed control groups are not empty. It is also given as a
+  percentage of the mean control occupancy.
+- *Verdicts:*
+  - interval wholly below 0 → *storms hold back heatwaves for the next month*;
+  - wholly above 0 → *storms are followed by more heatwave days*;
+  - otherwise → *no detectable difference*.
+
+**S4, dose-response: do stronger, slower storms end more of a heatwave?**
+- *Model:* over heatwave points, 1982–2026, the S1 survival difference regressed on M
+  (as in T2: log(wind² / translation speed), standardised over these points), with a
+  South Indian Ocean indicator.
+- *Verdicts:*
+  - the slope's interval wholly below 0 → *stronger, slower storms end more of the
+    heatwave*;
+  - above 0 → *the opposite*;
+  - otherwise → *no detectable dependence on storm power*.
+
+### Also reported (descriptive, no verdict)
+
+- **D1, survival curve:** storm and control shares from D0 + 1 to D0 + 30, 1982–2026,
+  pooled.
+- **D2, encounters.**
+  - Per year and region: the number of storms and points over heatwave water
+    (E ≥ 0.5), with a Theil–Sen slope per decade. A rise is expected, because the
+    baseline is fixed while the ocean warms.
+  - Do storms meet heatwave water more often than chance? Compare the points' mean E
+    with the basin's mean heatwave share on the same D0 − 3 days.
+- **D3, what changes the effect:** the S1 measure (1982–2026) by basin, season, era,
+  wind class, and tercile of pre-storm SST anomaly.
+- **D4, sea temperature recovery:** re-warming days (the main study's definition,
+  60-day cap) for heatwave and normal points, 1982–2026, as Kaplan–Meier medians.
+- **D5, longer suppression:** S3's measure over D0 + 36 to D0 + 95 and D0 + 96 to
+  D0 + 245.
+- **D6, a tighter control:** S1–S3 with control cells limited to the point's 5°
+  latitude band.
+
+### Checks run before any result is read
+
+- On days from 2002 on, the rebuilt heatwave flags must match the flags already used.
+  Any mismatching cell-days are counted and reported.
+- For every 2002–2026 point present in the final-test tables, the rebuilt storm and
+  control survival shares must match the stored values. Any mismatch is reported.
+
+**Limits.**
+- *Association, not proof.* A storm comes with clouds, rain and wind beyond its core,
+  so "the storm" here means the whole weather system. The monsoon onset also ends
+  heatwaves; the month strata address this but cannot remove it.
+- *Track quality.* Wind estimates before about 2000 are less certain.
+- *Fewer early heatwaves.* The fixed baseline leaves fewer heatwaves in the 1980s, so
+  S1 has fewer points than the later era.
+- *OISST under-reads cold wakes under cloud.* This makes storm endings harder to see,
+  so it works against finding an effect.
+
 ## Known limits, stated with every result
 
 - OISST has no microwave input and under-reads cold wakes beneath cloud. The
@@ -475,3 +636,4 @@ uses fixed literature parameters, not ones fitted to this region.
 | 2026-11-27 | Added the final confirmatory test (section above): South Indian Ocean storms, a three-outcome rule with a smallest meaningful effect and a 99% interval, and secondary tests T2–T4 with a power simulation | Asked for a definitive answer after the replication; written before any South Indian Ocean value or new test was computed. Methods from `docs/methods_research.md`. |
 | 2026-11-27 | Added the virtual experiments (section above) | The simulation part of the methods plan; written before any real storm was simulated. |
 | 2026-11-27 | Bug fix in the column model, then every virtual-experiment variant rerun from scratch. The gradient-Richardson partial mix is now capped at full mixing of the two layers. The report also counts runs with non-finite outputs. | *Found:* after the first run (base and three sensitivity variants). About 4% of runs had non-physical values (NaN, a surface warming of 580 °C, nitrate of 10⁶⁸). *Cause:* below a density inversion the Richardson number is negative and the uncapped mixing fraction overshoots. *What was seen:* the base paired summary was looked at before the fix. *Why that does not bias the result:* the fix follows from the numerical failure alone; it changes no rule, input or output definition; it adds a unit test. The first run's files are kept outside the repository (`data/interim/virtual/bugged_20261127/`) and are not reported as results. |
+| 2026-11-28 | Added "Storms end heatwaves: the whole record, 1982–2026" (section above). It has a basin-scale rate ratio (W1), four secondary tests (S1–S4) and descriptive measures. | Planned for December as the project's largest robust effect. Written before any measure in it was computed, and before any 1982–2001 response. The only things seen are the disclosed survival values and point counts. |

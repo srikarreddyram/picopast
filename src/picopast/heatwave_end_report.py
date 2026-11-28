@@ -26,6 +26,10 @@ def _vci(m: dict, scale=1.0, digits=2, unit="") -> str:
     return f"{m['value'] * scale:.{digits}f}{unit} [{m['lo'] * scale:.{digits}f}, {m['hi'] * scale:.{digits}f}]"
 
 
+def _days(v) -> str:
+    return "over 60 d (most never re-warmed within the 60 days)" if v is None or not np.isfinite(v) else f"{v:.0f} d"
+
+
 def _p(p) -> str:
     return "<0.001" if p < 0.001 else f"{p:.3f}"
 
@@ -53,9 +57,9 @@ def plot_survival(res: dict, out: Path) -> Path:
     ax.plot(days, 100 * np.array(c["storm"]), color=STORM, lw=2, label="under a storm")
     ax.axvline(5, color=MUTED, lw=0.8, ls=":")
     ax.text(5.3, 96, "D0+5 (the pre-registered day)", color=MUTED, fontsize=7, va="top")
-    ax.text(days[-1] + 0.4, 100 * c["control"][-1], "far from any storm", color=CTRL, fontsize=8, va="center")
-    ax.text(days[-1] + 0.4, 100 * c["storm"][-1], "under a storm", color=STORM, fontsize=8, va="center")
-    ax.set_xlim(0.5, days[-1] + 8)
+    ax.text(14, 100 * c["control"][13] + 3, "far from any storm", color=CTRL, fontsize=8, va="bottom")
+    ax.text(14, 100 * c["storm"][13] - 3, "under a storm", color=STORM, fontsize=8, va="top")
+    ax.set_xlim(0.5, days[-1] + 0.5)
     ax.set_ylim(0, 100)
     ax.set_xlabel("days after the storm passed (D0)", color=INK, fontsize=9)
     ax.set_ylabel("heatwave water still in a heatwave (%)", color=INK, fontsize=9)
@@ -74,6 +78,7 @@ def plot_encounters(res: dict, out: Path) -> Path:
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
 
     enc = res["descriptive"]["D2_encounters"]
     fig, axes = plt.subplots(2, 1, figsize=(6.2, 4.4), dpi=150, sharex=True)
@@ -84,6 +89,7 @@ def plot_encounters(res: dict, out: Path) -> Path:
         vals = np.array([s[k] if k in s else s[str(k)] for k in yrs])
         ax.bar(yrs, vals, width=0.8, color=color, edgecolor="white", linewidth=0.5)
         ax.set_ylabel("storms", color=INK, fontsize=8)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         ax.text(0.01, 0.95, f"{label}: storms that crossed heatwave water", transform=ax.transAxes,
                 color=INK, fontsize=9, va="top")
         _style(ax)
@@ -128,22 +134,31 @@ def report(cfg: Config, res: dict) -> Path:
           f"  - Over 1982–2026, a heatwave cell under a storm is **{a['hr']['value']:.1f} times** as likely "
           f"to end that day as one elsewhere in the same basin, month and latitude band "
           f"(rate ratio {_vci(a['hr'], digits=2)}).",
-          f"  - Storms account for **{_pct(a['share']['value'], 1)}** of all heatwave endings "
-          f"[{_pct(a['share']['lo'], 1)}, {_pct(a['share']['hi'], 1)}].",
-          f"  - Yet storms touch only {_pct(a['exposed_share_of_days']['value'], 2)} of heatwave cell-days.",
+          f"  - Stronger storms do more: {_vci(pooled['64 kt and above']['hr'], digits=1)} at 64 kt and above, "
+          f"{_vci(pooled['34-63 kt']['hr'], digits=1)} below.",
+          f"  - But storms touch only {_pct(a['exposed_share_of_days']['value'], 2)} of heatwave cell-days, so "
+          f"they account for only **{_pct(a['share']['value'], 1)}** of all heatwave endings "
+          f"[{_pct(a['share']['lo'], 1)}, {_pct(a['share']['hi'], 1)}]: a strong but rare way for a heatwave to end.",
           f"  - Of the endings that happen under a storm, {_pct(a['share_exposed']['value'])} would not have "
           f"happened at the usual rate.",
           f"- **S1, the earlier era (1982–2001): {s1['verdict']}.** {_pct(s1['storm_share'])} of heatwave "
           f"water survived to D0 + 5 under storms against {_pct(s1['control_share'])} far away "
           f"({_ci(s1, scale=100, digits=0, unit=' points')}; {s1['n_points']} points, {s1['n_storms']} storms; "
-          f"Holm p {_p(s1['p_holm'])}).",
+          f"Holm p {_p(s1['p_holm'])}). With the control limited to the same 5° latitude band (D6) the "
+          f"earlier era gives {_ci(ds['D6_band_control']['S1'], scale=100, digits=0, unit=' points')} (smaller, "
+          f"and its interval includes zero); the whole "
+          f"record gives {_ci(ds['D6_band_control']['survival 1982-2026'], scale=100, digits=0, unit=' points')}.",
           f"- **S2, return time: {s2['verdict']}.** Once a storm ends a heatwave, the next one arrives after "
           f"{s2['storm_days']:.0f} days on average, against {s2['control_days']:.0f} days for heatwaves that "
-          f"ended on their own ({_ci(s2, digits=1, unit=' days')}; Holm p {_p(s2['p_holm'])}).",
+          f"ended on their own ({_ci(s2, digits=1, unit=' days')}; Holm p {_p(s2['p_holm'])}). **Not robust:** "
+          f"with the control limited to the same 5° latitude band (D6) the difference is "
+          f"{_ci(ds['D6_band_control']['S2'], digits=1, unit=' days')}, so storm-ended heatwaves return about "
+          "as fast as others at the same latitude. Either way, storms do not keep heatwaves away for months.",
           f"- **S3, the next month: {s3['verdict']}.** Heatwave days over D0 + 6 to D0 + 35: "
           f"{_pct(s3['storm_occupancy'], 1)} under storms against {_pct(s3['control_occupancy'], 1)} expected "
           f"({_ci(s3, scale=100, digits=1, unit=' points')}, {s3['percent_of_control']:+.0f}% of the expected; "
-          f"Holm p {_p(s3['p_holm'])}).",
+          f"Holm p {_p(s3['p_holm'])}). The hold-back fades after the first month (D5: "
+          f"{_ci(ds['D5_longer']['months 2-3'], scale=100, digits=1, unit=' points')} in months 2–3).",
           f"- **S4, storm power: {s4['verdict']}.** Survival difference per standard deviation of mixing power: "
           f"{s4['slope'] * 100:+.1f} points [{s4['lo'] * 100:+.1f}, {s4['hi'] * 100:+.1f}] (Holm p "
           f"{_p(s4['p_holm'])}).", ""]
@@ -154,7 +169,8 @@ def report(cfg: Config, res: dict) -> Path:
           "day out of the heatwave. A cell-day is exposed when a JTWC fix of 34 kt or more lies within 150 km "
           "on that day, the day before or the day after. Rates are compared within basin × month × 5° latitude "
           "strata (Mantel–Haenszel); intervals resample calendar years (95%).", "",
-          "| Region | Hot cell-days | Endings | Exposed days | Ending rate, exposed | Ending rate, not | "
+          "| Region | Hot cell-days | Endings | Share of hot cell-days under a storm | Ending rate, exposed | "
+          "Ending rate, not | "
           "Rate ratio | Share of all endings due to storms | Verdict |",
           "| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |"]
     for reg, label in (("pooled", "Both"), ("north", "North"), ("south", "South")):
@@ -215,7 +231,7 @@ def report(cfg: Config, res: dict) -> Path:
         ch = e["chance"]
         dec = ", ".join(f"{k}s: {v}" for k, v in sorted(e["by_decade"].items(), key=lambda kv: int(kv[0])))
         L.append(f"**D2, encounters ({reg}).** Storms over heatwave water per decade: {dec}. Theil–Sen trend "
-                 f"{e['storms_per_decade']['slope']:+.1f} storms per year per decade "
+                 f"{e['storms_per_decade']['slope']:+.1f} such storms a year, per decade "
                  f"[{e['storms_per_decade']['lo']:+.1f}, {e['storms_per_decade']['hi']:+.1f}]; share of points over "
                  f"heatwave water {100 * e['share_per_decade']['slope']:+.1f} points per decade. Storm discs held "
                  f"heatwave water on {_pct(ch['mean_E'], 1)} of their cells against {_pct(ch['mean_basin_share'], 1)} "
@@ -233,9 +249,9 @@ def report(cfg: Config, res: dict) -> Path:
     L += ["", f"SST anomaly terciles cut at {cuts[0]:+.2f} and {cuts[1]:+.2f} °C.", ""]
     rec = ds["D4_recovery"]
     L.append("**D4, sea temperature recovery** (Kaplan–Meier median days until the disc's anomaly is back within "
-             "0.2 °C of its pre-storm value): " + "; ".join(
-                 f"{reg}: heatwave {rec[reg]['heatwave']['median_days']:.0f} d ({rec[reg]['heatwave']['points']} pts), "
-                 f"normal {rec[reg]['normal']['median_days']:.0f} d ({rec[reg]['normal']['points']} pts)"
+             "0.2 °C of its pre-storm value; for heatwave points that value is the heatwave's own warmth): " + "; ".join(
+                 f"{reg}: heatwave {_days(rec[reg]['heatwave']['median_days'])} ({rec[reg]['heatwave']['points']} pts), "
+                 f"normal {_days(rec[reg]['normal']['median_days'])} ({rec[reg]['normal']['points']} pts)"
                  for reg in ("pooled", "north", "south")) + ".")
     L.append("")
     d5 = ds["D5_longer"]

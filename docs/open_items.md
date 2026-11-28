@@ -199,6 +199,26 @@ Updated 16 November 2026 (week 2), evening. Ordered by how soon each one blocks 
       a winter swing of up to 0.3 SD. Their older values depend on which
       sensor is used, and the SNPP-only rise in both is not seen in NOAA-20.
       Another reason they stay exploratory.
+34. **Storms end heatwaves, 1982–2026 (28 November; rules: "Storms end heatwaves" in
+    `docs/cyclone_heatwave_preregistration.md`; report: `docs/reports/heatwave_end.md`).**
+    - **Data:** OISST back to 1982 (1982–1990 newly downloaded), the same heatwave
+      definition and fixed 1991–2020 baseline; 915 storms, both boxes.
+    - **Checks passed before any result was read:** the rebuilt heatwave flags match
+      the earlier ones on all 655 million shared cell-days, and storm and control
+      survival match all 7,828 stored points.
+    - **W1 (primary):** a heatwave cell under a storm is 3.5 times as likely to end
+      that day [3.1, 3.8] (4.6 for 64 kt and above). Storms touch only 0.17% of
+      heatwave cell-days, so they cause only 0.4% of all endings.
+    - **S1:** the survival effect replicates in 1982–2001 alone (15% against 34%).
+    - **S2:** heatwaves ended by storms return about 10 days *sooner*. This is not
+      robust: with the control in the same latitude band it is −1.5 days
+      [−11.7, +8.9].
+    - **S3:** storms cut heatwave days in the next month by 30%; the cut fades
+      after that.
+    - **S4:** stronger, slower storms end more of the heatwave.
+    - **So:** storms end heatwaves strongly but briefly. Unlike the Pacific case
+      (Pun et al. 2025), they do not keep them away for months.
+
 33. **Virtual experiments: each storm with and without its heatwave (28 November;
     rules: "Virtual experiments" in `docs/cyclone_heatwave_preregistration.md`;
     report: `docs/reports/virtual_experiments.md`).**

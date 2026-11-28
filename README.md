@@ -60,12 +60,26 @@ difference; a large effect either way, and any real strengthening, are ruled out
 - **Robustness:** every sensitivity variant keeps the sign.
 - Report: [docs/reports/virtual_experiments.md](docs/reports/virtual_experiments.md).
 
+**Storms end heatwaves (1982–2026, 28 November 2026).**
+- **Method:** pre-registered; 45 years of daily heatwave maps and 915 storms over the
+  North and South Indian Ocean.
+- **Results:**
+  - A heatwave patch under a storm is 3.5 times as likely to end that day (3.1–3.8),
+    and 4.6 times for storms of 64 kt and above.
+  - Five days after a storm, 21% of its heatwave water is still in a heatwave, against
+    45% far away. This holds in 1982–2001 alone (15% against 34%).
+  - Stronger, slower storms end more of the heatwave.
+  - Storms cut heatwave days in the following month by 30%, but not beyond that.
+    Storm-ended heatwaves do not stay away longer than others.
+- **In context:** storms are rare, so they cause only 0.4% of all heatwave endings.
+- Report: [docs/reports/heatwave_end.md](docs/reports/heatwave_end.md).
+
 ## Setup
 
 ```bash
 uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -e ".[dev]"
-.venv/bin/python -m pytest          # 87 tests, no network
+.venv/bin/python -m pytest          # 92 tests, no network
 ```
 
 NASA downloads need a free Earthdata account (<https://urs.earthdata.nasa.gov>).
@@ -86,6 +100,7 @@ Log in once; the credentials go to `~/.netrc`, never into this repository:
 | `picopast moana-check <date>` | Compares our MOANA with NASA's Atlantic L4 file for one day | yes |
 | `picopast cyclone-heatwave [--refresh]` | Builds the storm table and runs the pre-registered cyclone–heatwave tests → `docs/reports/cyclone_heatwave.md` | no (data on disk) |
 | `picopast final-test [--build]` | Final confirmatory test over the whole Indian Ocean (T1–T5) → `docs/reports/cyclone_heatwave_final.md` | no (data on disk) |
+| `picopast heatwave-end [--refresh]` | Storms end heatwaves, 1982–2026: ending rate, return time, suppression (pre-registered) → `docs/reports/heatwave_end.md` | no (data on disk) |
 | `picopast virtual [--workers 6]` | Column-model virtual experiments, each storm with and without its heatwave → `docs/reports/virtual_experiments.md` | no (data on disk) |
 
 Products are named in [config/picopast.yaml](config/picopast.yaml), which is
